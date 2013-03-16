@@ -802,6 +802,7 @@ void M3::M3_Master::load_train_data_parallel(string file_name){
 	while (1){
 		if (m_free_process>=m3_all_process_num){
 			// do something to handle this error
+            cout<<"error: m_free_process>=m3_all_process_num "<<m_free_process<<">="<<m3_all_process_num<<endl;
 			break;
 		}
 		if (it==label_file_name.end())

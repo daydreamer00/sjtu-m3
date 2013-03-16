@@ -5,6 +5,9 @@ int main(int argc,char ** argv){
 
     M3::parse();			// parse m3.config
 
+    //debug
+    cout<<"parse config file complete"<<endl;
+
     M3::initialize(argc,argv);	// initialize
     if (M3::flag_train()){
         M3::load_train_data();
