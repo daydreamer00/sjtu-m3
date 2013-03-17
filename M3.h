@@ -17,6 +17,9 @@
 #include "divider.h"
 #include "classifier.h"
 #include "voter.h"
+
+#include <sys/types.h>
+#include <unistd.h>
 /* #include "hc_voter.h" */
 /* #include "hyper_plane.h" */
 /* #include "libsvm_parameter.h" */

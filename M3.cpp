@@ -16,7 +16,7 @@
 #include "M3.h"
 using namespace std;
 
-#define DEBUG_IGNORE 1
+#define DEBUG_IGNORE 0
 
 // debug
 #define BEGIN_DEBUG if (!DEBUG_IGNORE){
@@ -95,6 +95,7 @@ void M3::initialize(int argc,
 	MPI_Initialized(&init_flag);
 	if (init_flag){
 		// do something to handle this error
+        cout<<"Error: MPI already initialized."<<endl;
 	}
 
 	// Initialize and get some process informaiton
@@ -122,6 +123,9 @@ void M3::initialize(int argc,
 	        m3_my_rank);
 	debug_name+=name_tmp;
 	debug_out.open(debug_name.c_str());
+    
+    // Print PID and rank
+    debug_out<<"My PID:"<<getpid()<<". My rank:"<<m3_my_rank<<endl;
 
 	//Commit Data_Sample & Data_Node
 	int data_node_len[2];
