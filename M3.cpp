@@ -89,6 +89,22 @@ bool M3::flag_score(){
     return m3_parameter->flag_score;
 }
 
+
+bool M3::memory_test(int sp_buf_len, int nd_buf_len){
+    void (*old_handler)()=set_new_handler(local_memory_scarcity);
+    Data_Node *dn;
+    try{
+        dn=new Data_Node[nd_buf_len];
+    }catch (exception e){
+        set_new_handler(old_handler);
+        return false;
+    }
+
+    set_new_handler(old_handler);
+    delete [] dn;
+    return true;
+}
+
 void M3::parse(){
     m3_parameter=new M3_Parameter("m3.config");
 }
@@ -354,8 +370,29 @@ M3::M3_Master::M3_Master(){
     m_index_to_label.clear();
 
     m_free_process=m3_start_slave_process_rank;
+
+    for(int i=0;i<=max_label_index;i++){
+        m_sample_link_head[i]=NULL;
+        m_sample_link_tail[i]=NULL;
+
+        m_train_data_num[i]=0;
+    }
+    m_memory_enough=true;
 }
 
+M3::M3_Master::~M3_Master(){
+    Sample_Link * sl,* sl_tmp;
+    for(int i=0;i<=max_label_index;i++){
+        for (sl=m_sample_link_head[i];sl!=NULL;){
+            Data_Sample * ds=sl->sample_head;
+            delete [] (ds[0].data_vector);
+            delete [] ds;
+            sl_tmp=sl;
+            sl=sl->next;
+            delete sl_tmp;
+        }
+    }
+}
 // As name
 float M3::M3_Master::string_to_float(char * str,
         int ll,
@@ -773,6 +810,178 @@ void M3::M3_Master::load_train_data_serial(string file_name,
     li_fout.close();
 
 };
+
+void M3::M3_Master::data_unpackage(Data_Sample * sample_buf,
+        Data_Node * node_buf,
+        int sp_buf_len,
+        int nd_buf_len,int label_index){
+    int i=label_index;
+    if (m_sample_link_tail[i]==NULL){
+        m_sample_link_head[i]=m_sample_link_tail[i]=new Sample_Link;
+        m_sample_link_tail[i]->sample_head=sample_buf;
+        m_sample_link_tail[i]->next=NULL;
+    }
+    else {
+        m_sample_link_tail[i]->next=new Sample_Link;
+        m_sample_link_tail[i]=m_sample_link_tail[i]->next;
+        m_sample_link_tail[i]->sample_head=sample_buf;
+        m_sample_link_tail[i]->next=NULL;
+    }
+
+    m_sample_link_tail[i]->length=sp_buf_len;
+    m_train_data_num[i]+=sp_buf_len;
+
+    int nb_offset=0;
+    for (i=0;i<sp_buf_len;i++){	// point to local address
+        sample_buf[i].data_vector=&node_buf[nb_offset];
+        nb_offset+=sample_buf[i].data_vector_length;
+    }
+}
+
+
+void M3::M3_Master::load_train_data_serial_gzc(string file_name){
+ 
+    Data_Split * data_split=new Data_Split(file_name,READ_BUF_SIZE);
+    data_split->split();
+    delete data_split;
+    
+    ifstream data_config("Split_Data/data.config");
+    map<float,string> label_file_name;
+    map<float,string>::iterator it;
+    label_file_name.clear();
+    string tmp_file_name;
+    double f_label;
+
+    while (data_config >> f_label >> tmp_file_name){
+        label_file_name[f_label]=tmp_file_name;
+        m_label_to_index[f_label]=m_index_to_label.size();
+        m_index_to_label.push_back(f_label);
+    }
+
+    // debug
+    TIME_DEBUG_OUT << "master has load the split data config" << endl;
+    for (it=label_file_name.begin();it!=label_file_name.end();it++)
+        TIME_DEBUG_OUT << "label " << (*it).first << " file is " << (*it).second << endl;
+
+    // debug
+    TIME_DEBUG_OUT << "master begin to send job at first time" << endl;
+
+    it=label_file_name.begin();
+    while (1){
+        if (it==label_file_name.end())
+            break;
+
+        string subset_file_name=(*it).second;
+
+        it++;
+
+        load_subset_data(subset_file_name,0,100,0);
+        load_subset_data(subset_file_name,0,100,1);
+
+    }  
+}
+
+void M3::M3_Master::load_subset_data(string file_name,int file_offset,int data_num_to_load,int label_index){
+    char * read_buf=new char[READ_BUF_SIZE];
+    FILE * data_file=fopen(file_name.c_str(),"r");
+    fseek(data_file,file_offset, SEEK_SET);
+    int sample_num=0;
+
+    while (!feof(data_file)){
+
+        if (!M3::memory_test(1,NODE_SIMPLE_BUF_SIZE)){
+
+            // debug
+            TIME_DEBUG_OUT << "slave_process " << m3_my_rank
+                << " memory is not more enough " << endl;
+
+            //read_done_flag=false;
+            break;
+        }
+
+        //       // debug
+        //       // debug
+        //       // debug
+        //       memory_test_tms++;
+        //       if (memory_test_tms>=150){
+
+        // 	// debug
+        // 	TIME_DEBUG_OUT << "slave_process " << m3_my_rank
+        // 		       << " memory is not more enough " << endl;
+
+        // 	read_done_flag=false;
+        // 	break;
+        //       }
+
+
+        memset(read_buf,0,sizeof(char)*READ_BUF_SIZE);
+        int index=0;
+        int node_len=0;
+
+        char cc;
+        while (1){			// igore "nl" && "er"
+            cc=getc(data_file);
+            if (cc!=10 && cc!=13)
+                break;
+        }
+        read_buf[index++]=cc;
+        if (cc==EOF)		// file over
+            break;
+        while (1){
+            cc=getc(data_file);
+            if (cc==10 || cc==13 || cc==EOF)
+                break;
+            node_len+=(cc==':');
+            read_buf[index++]=cc;
+        }
+
+        // debug
+        //       TIME_DEBUG_OUT << "slave_process " << m3_my_rank 
+        // 		     << "has read the buf: " << read_buf << endl;
+
+        Data_Sample * sample=new Data_Sample;
+        Data_Node * node=new Data_Node[node_len];
+        sample->data_vector=node;
+
+        parse_data(read_buf,
+                sample);
+
+        m_my_label=sample->label;
+
+        BEGIN_DEBUG;
+        // debug
+        TIME_DEBUG_OUT << "slave_process " << m3_my_rank
+            << " has parse the buf " << endl;
+        END_DEBUG;
+
+        data_unpackage(sample,
+                node,
+                1,
+                node_len,label_index);
+
+        sample_num++;
+
+        // debug
+        //       TIME_DEBUG_OUT << "slave_process " << m3_my_rank 
+        // 		     << " " << sample->index 
+        // 		     << " " << sample->label
+        // 		     << " " << sample->data_vector_length
+        // 		     << endl;
+        //       TIME_DEBUG_OUT;
+        //       for (int ii=0;ii<sample->data_vector_length;ii++)
+        // 	debug_out << "(" << sample->data_vector[ii].index
+        // 		  << "," << sample->data_vector[ii].value
+        // 		  << ")" ;
+        //       debug_out << endl;
+
+        BEGIN_DEBUG;
+        // debug
+        TIME_DEBUG_OUT << "slave_process " << m3_my_rank 
+            << " has link the sample " << endl;
+        END_DEBUG;
+
+    }
+}
 
 void M3::M3_Master::load_train_data_parallel(string file_name){
     // information define: int info[4];char label_file[1000];
