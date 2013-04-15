@@ -877,7 +877,6 @@ void M3::M3_Master::load_train_data_serial_gzc(string file_name){
 
         load_subset_data(subset_file_name,0,100,0);
         load_subset_data(subset_file_name,0,100,1);
-
     }  
 }
 

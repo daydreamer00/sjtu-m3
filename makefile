@@ -14,8 +14,11 @@ m3train: $(OBJS)
 m3_main.o: m3_main.cpp M3.h
 	$(CPP) $(CFLAGS) -c m3_main.cpp -o m3_main.o
 
-M3.o: M3.cpp M3.h
-	$(CPP) $(CFLAGS) -c M3.cpp -o M3.o
+M3.o: M3.cpp M3.h SerializedSampleSet.o
+	$(CPP) $(CFLAGS) -c M3.cpp SerializedSampleSet.o -o M3.o
+
+SerializedSampleSet.o: SerializedSampleSet.cpp SerializedSampleSet.h  
+	$(CPP) $(CFLAGS) -c SerializedSampleSet.cpp -o SerializedSampleSet.o
 
 svm.o: svm.cpp svm.h
 	$(CPP) $(CFLAGS) -c svm.cpp -o svm.o

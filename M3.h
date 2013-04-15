@@ -29,7 +29,6 @@
 using namespace std;
 
 namespace M3{
-
     const int max_label_index=1;
 
     bool rank_master(int rank);
@@ -248,11 +247,11 @@ namespace M3{
                     return false;
                 }
             };
-            struct Sample_Link{
-                Data_Sample * sample_head;
-                Sample_Link * next;
-                int length;
-            };
+            //struct Sample_Link{
+            //    Data_Sample * sample_head;
+            //    Sample_Link * next;
+            //    int length;
+            //};
             
             Sample_Link * m_sample_link_head[2],* m_sample_link_tail[2];
             int m_train_data_num[2];
@@ -378,11 +377,11 @@ namespace M3{
             // debug
             static const int DEBUG_MEMORY_CAPACITY=10;
 
-            struct Sample_Link{
-                Data_Sample * sample_head;
-                Sample_Link * next;
-                int length;
-            };
+            //struct Sample_Link{
+            //    Data_Sample * sample_head;
+            //    Sample_Link * next;
+            //    int length;
+            //};
             Sample_Link * m_sample_link_head,* m_sample_link_tail;
 
             Data_Sample ** m_sample_arr;

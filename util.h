@@ -2,6 +2,10 @@
 #define _UTIL_H
 #include "mpi.h"
 #include<cstdlib>
+#include<string>
+#include<iostream>
+
+using namespace std;
 
 struct Data_Node{
   int index;
@@ -15,6 +19,11 @@ struct Data_Sample{
   Data_Node * data_vector;
 };
 
+struct Sample_Link{
+    Data_Sample * sample_head;
+    Sample_Link * next;
+    int length;
+};
 
 struct Divide_Info{
   int start_offset,end_offset;
@@ -65,4 +74,9 @@ struct Subset_Info{
     return false;
   }
 };
+
+void error(string msg){
+    cout<<"Error: "<<msg<<endl;
+    exit(1);
+}
 #endif
