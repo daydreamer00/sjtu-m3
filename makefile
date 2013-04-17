@@ -2,28 +2,37 @@
 # No warranty, no liability
 # You use this at your own risk
 #################################################################
-OBJS=m3_main.o M3.o svm.o libsvm.o libsvm_parameter.o m3_factory.o prior_divide.o hyper_plane.o centroid.o random_divide.o divider.o hc_voter.o m3_parameter.o data_split.o svm_hideo.o svm_common.o svm_learn.o svm_light_parameter.o svm_light.o
+OBJS=m3_main.o M3.o svm.o libsvm.o libsvm_parameter.o m3_factory.o prior_divide.o hyper_plane.o centroid.o random_divide.o divider.o hc_voter.o m3_parameter.o data_split.o svm_hideo.o svm_common.o svm_learn.o svm_light_parameter.o svm_light.o util.o SerializedSampleSet.o  m3gzc.o #m3gzcKernel.o
 CPP=mpic++
 CC=mpicc
-CFLAGS=-Wall -g
+CFLAGS=-Wall -g 
 #CFLAGS=-pg
 
 m3train: $(OBJS)
-	$(CPP) $(OBJS) -o m3 
+	$(CPP) -L/usr/local/cuda3.1-toolkit/lib64 -lcudart $(OBJS) -o m3 
 
 m3_main.o: m3_main.cpp M3.h
 	$(CPP) $(CFLAGS) -c m3_main.cpp -o m3_main.o
 
-M3.o: M3.cpp M3.h SerializedSampleSet.o
-	$(CPP) $(CFLAGS) -c M3.cpp SerializedSampleSet.o -o M3.o
+M3.o: M3.cpp M3.h 
+	$(CPP) $(CFLAGS) -c M3.cpp -o M3.o
+
+util.o: util.cpp util.h
+	$(CPP) $(CFLAGS) -c util.cpp -o util.o
 
 SerializedSampleSet.o: SerializedSampleSet.cpp SerializedSampleSet.h  
 	$(CPP) $(CFLAGS) -c SerializedSampleSet.cpp -o SerializedSampleSet.o
 
+m3gzc.o: m3gzc.h m3gzc.cu 
+	nvcc -c m3gzc.cu -o m3gzc.o
+
+#m3gzcKernel.o: m3gzc_kernel.cu m3gzc.h m3gzc.cpp
+#	nvcc -c m3gzc_kernel.cu -o m3gzcKernel.o
+
 svm.o: svm.cpp svm.h
 	$(CPP) $(CFLAGS) -c svm.cpp -o svm.o
 
-libsvm.o: libsvm.cpp libsvm.h classifier.h
+libsvm.o: libsvm.cpp libsvm.h classifier.h 
 	$(CPP) $(CFLAGS) -c libsvm.cpp -o libsvm.o
 
 libsvm_parameter.o: libsvm_parameter.cpp libsvm_parameter.h
@@ -38,7 +47,7 @@ svm_hideo.o: svm_hideo.c
 svm_common.o: svm_common.h svm_common.c kernel.h
 	$(CC) -c $(CFLAGS) svm_common.c -o svm_common.o
 
-svm_light_parameter.o:svm_light_parameter.cpp svm_light_parameter.h util.h
+svm_light_parameter.o:svm_light_parameter.cpp svm_light_parameter.h 
 	$(CPP) $(CFLAGS) -c svm_light_parameter.cpp -o svm_light_parameter.o
 
 svm_light.o: svm_light.cpp svm_light.h classifier.h

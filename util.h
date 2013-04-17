@@ -75,8 +75,7 @@ struct Subset_Info{
   }
 };
 
-void error(string msg){
-    cout<<"Error: "<<msg<<endl;
-    exit(1);
-}
+void error(string msg);
+
+void assert_true(bool flag);
 #endif

@@ -17,6 +17,8 @@
 #include "divider.h"
 #include "classifier.h"
 #include "voter.h"
+#include "SerializedSampleSet.h"
+#include "m3gzc.h"
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -53,6 +55,7 @@ namespace M3{
     void classify_test_data();
     void score_test_data();
     void compare_true_label();
+
 
     class M3_Master{
         private:
