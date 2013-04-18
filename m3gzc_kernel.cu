@@ -8,6 +8,7 @@ using namespace std;
 __device__ float getDistance(const Data_Node * data,const int dataLength,const int * dataNodeIndexArray,const float * dataNodeValueArray,const int dataNodeNum){
     float sum=0;
     float x=0,x1=0;
+    cuPrintf("\n%f\n",data[0].value);
     while(1){
         int i=0,j=0;
         if (i==dataLength){ 

@@ -8,15 +8,15 @@
 #include <map>
 #include <string>
 
-#include "mpi.h"
+//#include "mpi.h"
 
 #include "m3_factory.h"
 #include "data_split.h"
 #include "parameter.h"
 #include "util.h"
 #include "divider.h"
-#include "classifier.h"
-#include "voter.h"
+//#include "classifier.h"
+//#include "voter.h"
 #include "SerializedSampleSet.h"
 #include "m3gzc.h"
 
@@ -50,11 +50,11 @@ namespace M3{
     void initialize(int argc, char * argv[]);
     void finalize();
     void load_train_data();
-    void divide_train_data();
-    void training_train_data();
+    //void divide_train_data();
+    //void training_train_data();
     void classify_test_data();
-    void score_test_data();
-    void compare_true_label();
+    //void score_test_data();
+    //void compare_true_label();
 
 
     class M3_Master{
@@ -250,11 +250,6 @@ namespace M3{
                     return false;
                 }
             };
-            //struct Sample_Link{
-            //    Data_Sample * sample_head;
-            //    Sample_Link * next;
-            //    int length;
-            //};
             
             Sample_Link * m_sample_link_head[2],* m_sample_link_tail[2];
             int m_train_data_num[2];
@@ -304,16 +299,16 @@ namespace M3{
                     int & sbs_len,
                     int & nsb_len);
 
-            void check_load_data();
+            //void check_load_data();
 
             
-            void make_train_info();
+            //void make_train_info();
 
-            void load_train_data_serial(string file_name, // The file's name. 
-                    vector<bool> need_train_index); // The table point out which data need to be trained. 
+            //void load_train_data_serial(string file_name, // The file's name. 
+            //        vector<bool> need_train_index); // The table point out which data need to be trained. 
             void load_train_data_serial_gzc(string file_name);
 
-            void load_train_data_parallel(string file_name);
+            //void load_train_data_parallel(string file_name);
 
             void load_subset_data(string file_name,int offset,int data_num_to_load,int label_index);
 
@@ -322,54 +317,54 @@ namespace M3{
                     int sp_buf_len,
                     int nd_buf_len,int label_index); 
 
-            void check_divide_data();
+            //void check_divide_data();
 
-            void test_ctrl(int ctrl);
+            //void test_ctrl(int ctrl);
 
-            void load_subset_config();
+            //void load_subset_config();
 
-            bool ask_load_subset(int index);
+            //bool ask_load_subset(int index);
 
-            void classify_test_data_serial(string file_name,
-                    vector<bool> test_flag);
+            //void classify_test_data_serial(string file_name,
+            //        vector<bool> test_flag);
 
-            void classify_test_data_parallel();
+            //void classify_test_data_parallel();
 
-            void classify_test_data_nonpruning(const string &);
+            //void classify_test_data_nonpruning(const string &);
 
-            void make_pipe_info_pruning();
+            //void make_pipe_info_pruning();
 
-            void send_pipe_info_pruning(Pipe_Info & pi);
+            //void send_pipe_info_pruning(Pipe_Info & pi);
 
-            void handle_pipe_score(vector<bool> & test_flag);   /* combine test and score */
+            //void handle_pipe_score(vector<bool> & test_flag);   /* combine test and score */
 
-            void classify_test_data_pruning();
+            //void classify_test_data_pruning();
 
-            double get_min_score_full(int ll,
-                    int rr,
-                    ifstream * fin,
-                    double sm,
-                    bool flag);
+            //double get_min_score_full(int ll,
+            //        int rr,
+            //        ifstream * fin,
+            //        double sm,
+            //        bool flag);
 
-            double get_min_score_min_vector(ifstream * fin,
-                    double sm,
-                    bool flag);
+            //double get_min_score_min_vector(ifstream * fin,
+            //        double sm,
+            //        bool flag);
 
-            void score_test_data_nonpruning(vector<bool> test_flag);
+            //void score_test_data_nonpruning(vector<bool> test_flag);
 
-            void score_file_combine_sematric_pruning(); // faint for the finit file point in OS!!!!!!!!
+            //void score_file_combine_sematric_pruning(); // faint for the finit file point in OS!!!!!!!!
 
-            void score_test_data_sematric_pruning(vector<bool> test_flag);
+            //void score_test_data_sematric_pruning(vector<bool> test_flag);
 
         public:
             M3_Master();
             ~M3_Master();
             void load_train_data(const string &);
-            void divide_train_data();
+            //void divide_train_data();
             void training_train_data();
             void classify_test_data();
-            void score_test_data();
-            void compare_true_label(const string &);
+            //void score_test_data();
+            //void compare_true_label(const string &);
     };
 
     class M3_Slave{
@@ -402,47 +397,47 @@ namespace M3{
                     int ll,
                     int rr);
 
-            void parse_data(char * read_buf,
-                    Data_Sample * data_sample);
+            //void parse_data(char * read_buf,
+            //        Data_Sample * data_sample);
 
 
-            void data_unpackage(Data_Sample * sample_buf,
-                    Data_Node * node_buf,
-                    int sp_buf_len,
-                    int nd_buf_len);
+            //void data_unpackage(Data_Sample * sample_buf,
+            //        Data_Node * node_buf,
+            //        int sp_buf_len,
+            //        int nd_buf_len);
 
-            void check_load_data();
+            //void check_load_data();
 
-            bool memory_test(int sp_buf_len, int nd_buf_len);
+            //bool memory_test(int sp_buf_len, int nd_buf_len);
 
-            static void local_memory_scarcity(){
-                throw new exception;
-            }
+            //static void local_memory_scarcity(){
+            //    throw new exception;
+            //}
 
-            void load_train_data_serial();
+            //void load_train_data_serial();
 
-            void load_train_data_parallel();
+            //void load_train_data_parallel();
 
-            void pre_divide();
+            //void pre_divide();
 
-            void check_divide_data();
+            //void check_divide_data();
 
-            void subset_sample_package(int ll,
-                    int rr,
-                    Data_Sample * sample_buf,
-                    int & nb_len);
+            //void subset_sample_package(int ll,
+            //        int rr,
+            //        Data_Sample * sample_buf,
+            //        int & nb_len);
 
-            void subset_node_package(int sb_len,
-                    Data_Sample * sample_buf,
-                    Data_Node * node_buf);
+            //void subset_node_package(int sb_len,
+            //        Data_Sample * sample_buf,
+            //        Data_Node * node_buf);
 
         public:
             M3_Slave();
             ~M3_Slave();
-            void load_train_data();
-            void divide_train_data();
-            void training_train_data();
-            void classify_test_data();  // do nothing
+            //void load_train_data();
+            //void divide_train_data();
+            //void training_train_data();
+            //void classify_test_data();  // do nothing
     };
 
     class M3_Run{  
@@ -738,95 +733,95 @@ namespace M3{
 
             Classifier * make_classifier();
 
-            void score_test_data_full(vector<Classifier*> & classifier,
-                    vector<Subset_Info> & subset_info,
-                    vector<ofstream*> & middle_score,
-                    Data_Sample * sample_buf);
+            //void score_test_data_full(vector<Classifier*> & classifier,
+            //        vector<Subset_Info> & subset_info,
+            //        vector<ofstream*> & middle_score,
+            //        Data_Sample * sample_buf);
 
-            void score_test_data_min_vector(vector<Classifier*> & classifier,
-                    vector<Subset_Info> & subset_info,
-                    vector<ofstream*> & middle_score,
-                    Data_Sample * sample_buf);
+            //void score_test_data_min_vector(vector<Classifier*> & classifier,
+            //        vector<Subset_Info> & subset_info,
+            //        vector<ofstream*> & middle_score,
+            //        Data_Sample * sample_buf);
 
-            void only_classify_test_data_serial(MPI_Status & mpi_status,
-                    vector<Classifier*> & classifier,
-                    vector<Subset_Info> & subset_info,
-                    vector<ofstream*> & middle_score,
-                    Data_Sample * sample_buf,
-                    Data_Node * node_buf);
+            //void only_classify_test_data_serial(MPI_Status & mpi_status,
+            //        vector<Classifier*> & classifier,
+            //        vector<Subset_Info> & subset_info,
+            //        vector<ofstream*> & middle_score,
+            //        Data_Sample * sample_buf,
+            //        Data_Node * node_buf);
 
-            void only_classify_test_data_parallel(string & file_name,
-                    vector<bool> & test_flag,
-                    vector<Classifier*> & classifier,
-                    vector<Subset_Info> & subset_info,
-                    vector<ofstream*> & middle_score,
-                    Data_Sample * sample_buf,
-                    Data_Node * node_buf);
-            void make_level_info_classifier();
+            //void only_classify_test_data_parallel(string & file_name,
+            //        vector<bool> & test_flag,
+            //        vector<Classifier*> & classifier,
+            //        vector<Subset_Info> & subset_info,
+            //        vector<ofstream*> & middle_score,
+            //        Data_Sample * sample_buf,
+            //        Data_Node * node_buf);
+            //void make_level_info_classifier();
 
-            void classify_test_data_nonpruning();
+            //void classify_test_data_nonpruning();
 
-            int get_level_info_pruning();
+            //int get_level_info_pruning();
 
-            void pipe_get_mlisp(int len,
-                    Level_Info * li);
+            //void pipe_get_mlisp(int len,
+            //        Level_Info * li);
 
-            void pipe_give_mlisp(int len,
-                    Level_Info * li);
+            //void pipe_give_mlisp(int len,
+            //        Level_Info * li);
 
-            void pipe_get_mliap(int len,
-                    Level_Info * li);
+            //void pipe_get_mliap(int len,
+            //        Level_Info * li);
 
-            void pipe_give_mliap(int len,
-                    Level_Info * li);
+            //void pipe_give_mliap(int len,
+            //        Level_Info * li);
 
-            void pipe_get_sample_buf_from_file(ifstream & file_in,
-                    char * read_buf,
-                    Data_Sample * sample_buf,
-                    Data_Node * node_buf,
-                    int & sb_len,
-                    int & nb_len,
-                    int & index,
-                    vector<bool> & test_flag);
+            //void pipe_get_sample_buf_from_file(ifstream & file_in,
+            //        char * read_buf,
+            //        Data_Sample * sample_buf,
+            //        Data_Node * node_buf,
+            //        int & sb_len,
+            //        int & nb_len,
+            //        int & index,
+            //        vector<bool> & test_flag);
 
-            void make_all_test_sample_buf(string file_name,
-                    vector<bool> test_flag);
+            //void make_all_test_sample_buf(string file_name,
+            //        vector<bool> test_flag);
 
-            void make_all_test_sample_buf(ifstream & file_name,
-                    vector<bool> test_flag,
-                    int & index); /* for combine score */
+            //void make_all_test_sample_buf(ifstream & file_name,
+            //        vector<bool> test_flag,
+            //        int & index); /* for combine score */
 
-            Data_Sample * pipe_get_sample_buf_from_all_data_buf(int & sb_len);
+            //Data_Sample * pipe_get_sample_buf_from_all_data_buf(int & sb_len);
 
-            void pipe_level_classify_sematric_pruning(int mlevel,
-                    Data_Sample * sample_buf,
-                    int sb_len);
+            //void pipe_level_classify_sematric_pruning(int mlevel,
+            //        Data_Sample * sample_buf,
+            //        int sb_len);
 
-            void pipe_level_classify_asematric_pruning(int mlevel,
-                    Data_Sample * sample_buf,
-                    int sb_len);
+            //void pipe_level_classify_asematric_pruning(int mlevel,
+            //        Data_Sample * sample_buf,
+            //        int sb_len);
 
-            void pipe_classify_test_data_sematric_pruning(string file_name,
-                    vector<bool> test_flag,
-                    bool mid_score_save);
+            //void pipe_classify_test_data_sematric_pruning(string file_name,
+            //        vector<bool> test_flag,
+            //        bool mid_score_save);
 
-            void pipe_classify_test_data_asematric_pruning(string file_name,
-                    vector<bool> test_flag,
-                    bool mid_score_save);
+            //void pipe_classify_test_data_asematric_pruning(string file_name,
+            //        vector<bool> test_flag,
+            //        bool mid_score_save);
 
-            void classify_test_data_pruning(string file_name,
-                    vector<bool> test_flag);
+            //void classify_test_data_pruning(string file_name,
+            //        vector<bool> test_flag);
 
-            void classify_and_score_test_data_pruning(string file_name,
-                    vector<bool> test_flag);
+            //void classify_and_score_test_data_pruning(string file_name,
+            //        vector<bool> test_flag);
 
         public:
             M3_Run();
             ~M3_Run();
             void load_train_data(); // do nothing
             void divide_train_data();   // do nothing
-            void training_train_data();
-            void classify_test_data();
+            //void training_train_data();
+            //void classify_test_data();
     };
 
     static M3_Parameter * m3_parameter;
@@ -841,9 +836,9 @@ namespace M3{
     static int M3_TAG=0;    // point out the recive tag
     static int M3_SUBSET_INFO_TAG=9999; // special tag for free response
 
-    static MPI_Datatype MPI_Data_Node;  // need to be commit
-    static MPI_Datatype MPI_Data_Sample;
-    static MPI_Datatype MPI_Subset_Info;
+    //static MPI_Datatype MPI_Data_Node;  // need to be commit
+    //static MPI_Datatype MPI_Data_Sample;
+    //static MPI_Datatype MPI_Subset_Info;
 
     static M3_Master * m3_master;
     static M3_Slave * m3_slave;
