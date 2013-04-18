@@ -2,7 +2,7 @@
 # No warranty, no liability
 # You use this at your own risk
 #################################################################
-OBJS=m3_main.o M3.o svm.o libsvm.o libsvm_parameter.o m3_factory.o prior_divide.o hyper_plane.o centroid.o random_divide.o divider.o hc_voter.o m3_parameter.o data_split.o svm_hideo.o svm_common.o svm_learn.o svm_light_parameter.o svm_light.o util.o SerializedSampleSet.o  m3gzc.o #m3gzcKernel.o
+OBJS=m3_main.o M3.o svm.o libsvm.o libsvm_parameter.o m3_factory.o prior_divide.o hyper_plane.o centroid.o random_divide.o divider.o hc_voter.o m3_parameter.o data_split.o svm_hideo.o svm_common.o svm_learn.o svm_light_parameter.o svm_light.o util.o SerializedSampleSet.o  m3gzc.o #cuPrintf.o #m3gzcKernel.o
 CPP=g++#mpic++
 CC=gcc#mpicc
 CFLAGS=-Wall -g 
@@ -25,6 +25,9 @@ SerializedSampleSet.o: SerializedSampleSet.cpp SerializedSampleSet.h
 
 m3gzc.o: m3gzc.h m3gzc.cu 
 	nvcc -c m3gzc.cu -o m3gzc.o
+
+#cuPrintf.o: cuPrintf.cuh cuPrintf.cu
+#	nvcc -c cuPrintf.cu -o cuPrintf.o
 
 #m3gzcKernel.o: m3gzc_kernel.cu m3gzc.h m3gzc.cpp
 #	nvcc -c m3gzc_kernel.cu -o m3gzcKernel.o

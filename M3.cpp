@@ -254,6 +254,8 @@ void M3::load_train_data(){
         cout << "The master is prepare reading" << endl;
 
         m3_master->load_train_data(m3_parameter->train_data);
+        
+        cout<< "The master read done"<<endl;
     }
     //else if (rank_slave(m3_my_rank)){
     //    m3_slave->load_train_data();
@@ -309,6 +311,9 @@ void M3::load_train_data(){
 //}
 
 void M3::classify_test_data(){
+
+    cout<<"Classify begin"<<endl;
+
     if (rank_master(m3_my_rank))
         m3_master->classify_test_data();
     //else if (rank_run(m3_my_rank))

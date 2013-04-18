@@ -2,13 +2,13 @@
 #include<cuda.h>
 #include"util.h"
 #include"SerializedSampleSet.h"
+#include"cuPrintf.cu"
 
 using namespace std;
 
 __device__ float getDistance(const Data_Node * data,const int dataLength,const int * dataNodeIndexArray,const float * dataNodeValueArray,const int dataNodeNum){
     float sum=0;
     float x=0,x1=0;
-    cuPrintf("\n%f\n",data[0].value);
     while(1){
         int i=0,j=0;
         if (i==dataLength){ 
@@ -32,6 +32,7 @@ __device__ float getDistance(const Data_Node * data,const int dataLength,const i
 __device__ float getDistance(const int * dataNodeIndexArray1,const float * dataNodeValueArray1,const int dataNodeNum1,const int * dataNodeIndexArray2,const float * dataNodeValueArray2,const int dataNodeNum2){
     float x1=0,x2=0;
     float sum=0;
+    cuPrintf("%d\n",dataNodeNum1);
     while(1){
         int i=0,j=0;
         if (i==dataNodeNum1){ 
