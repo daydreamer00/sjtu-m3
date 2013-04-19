@@ -15,6 +15,7 @@ SerializedSampleSet::SerializedSampleSet(Sample_Link * m_sample_link_head){
         labelArray[i]=cur_sample->label;
         for(int j=0;j<cur_sample->data_vector_length;j++){
             if(dataNodeOffset+j>=SerializedSampleSet::max_num_data)  error("Too many data nodes");
+            //cout<<cur_data_vector[j].index<<" ";
             dataNodeIndexArray[dataNodeOffset+j]=cur_data_vector[j].index;
             dataNodeValueArray[dataNodeOffset+j]=cur_data_vector[j].value;
             //cout<<dataNodeValueArray[dataNodeOffset+j]<<endl;

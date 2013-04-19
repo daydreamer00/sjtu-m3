@@ -28,10 +28,16 @@ class SerializedSampleSet {
         };
 
         void print(){
-            for(int i=0;i<20;i++){
-                //cout<<dataNodeValueArray[i];
+            cout<<"index :";
+            for(int i=0;i<numSample;i++){
+                cout<<dataNodeIndexArray[i]<<' ';
             }
-            cout<<numSample;
+            cout<<endl<<"value :";
+            for(int i=0;i<numSample;i++){
+                cout<<dataNodeValueArray[i]<<' ';
+            }
+            cout<<endl;
+            cout<<"sample num : "<<numSample;
             cout<<endl;
         }
 };

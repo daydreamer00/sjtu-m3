@@ -2,14 +2,15 @@
 # No warranty, no liability
 # You use this at your own risk
 #################################################################
-OBJS=m3_main.o M3.o svm.o libsvm.o libsvm_parameter.o m3_factory.o prior_divide.o hyper_plane.o centroid.o random_divide.o divider.o hc_voter.o m3_parameter.o data_split.o svm_hideo.o svm_common.o svm_learn.o svm_light_parameter.o svm_light.o util.o SerializedSampleSet.o  m3gzc.o #cuPrintf.o #m3gzcKernel.o
+#OBJS=m3_main.o M3.o svm.o libsvm.o libsvm_parameter.o m3_factory.o prior_divide.o hyper_plane.o centroid.o random_divide.o divider.o hc_voter.o m3_parameter.o data_split.o svm_hideo.o svm_common.o svm_learn.o svm_light_parameter.o svm_light.o util.o SerializedSampleSet.o  m3gzc.o #cuPrintf.o #m3gzcKernel.o
+OBJS=m3_main.o M3.o m3_parameter.o data_split.o util.o SerializedSampleSet.o  m3gzc.o #cuPrintf.o #m3gzcKernel.o
 CPP=g++#mpic++
 CC=gcc#mpicc
 CFLAGS=-Wall -g 
 #CFLAGS=-pg
 
 m3train: $(OBJS)
-	$(CPP) -L/usr/local/cuda3.1-toolkit/lib64 -lcudart $(OBJS) -o m3 
+	$(CPP) -L/opt/cuda/lib64 -lcudart $(OBJS) -o m3 
 
 m3_main.o: m3_main.cpp M3.h
 	$(CPP) $(CFLAGS) -c m3_main.cpp -o m3_main.o
@@ -24,7 +25,7 @@ SerializedSampleSet.o: SerializedSampleSet.cpp SerializedSampleSet.h
 	$(CPP) $(CFLAGS) -c SerializedSampleSet.cpp -o SerializedSampleSet.o
 
 m3gzc.o: m3gzc.h m3gzc.cu 
-	nvcc -c m3gzc.cu -o m3gzc.o
+	nvcc -arch=sm_20 -c m3gzc.cu -o m3gzc.o
 
 #cuPrintf.o: cuPrintf.cuh cuPrintf.cu
 #	nvcc -c cuPrintf.cu -o cuPrintf.o

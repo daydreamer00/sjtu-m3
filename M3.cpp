@@ -218,8 +218,8 @@ void M3::initialize(int argc, char * argv[]){
         m3_master=new M3_Master;
     else if (rank_slave(m3_my_rank))
         m3_slave=new M3_Slave;
-    else if (rank_run(m3_my_rank))
-        m3_run=new M3_Run;
+    //else if (rank_run(m3_my_rank))
+    //    m3_run=new M3_Run;
 }
 
 void M3::finalize(){
@@ -242,8 +242,8 @@ void M3::finalize(){
         delete m3_master;
     else if (rank_slave(m3_my_rank))
         delete m3_slave;
-    else if (rank_run(m3_my_rank))
-        delete m3_run;
+    //else if (rank_run(m3_my_rank))
+    //    delete m3_run;
 }
 
 void M3::load_train_data(){
@@ -427,24 +427,28 @@ void M3::M3_Master::parse_data(char * rbuf,
     int len=0;
 
     while (rbuf[i]!=' ') i++; 
-    dsp->label=string_to_float(rbuf,
-            pri,
-            i);
+    int sampleNo=string_to_int(rbuf, pri, i);
+    
+    pri=++i;
+    while (rbuf[i]!=' ') i++; 
+    dsp->label=string_to_float(rbuf, pri, i);
+
+    //puts(rbuf); 
+    //cout<<dsp->label<<' ';
 
     while (rbuf[i]){
         pri=++i;
         while (rbuf[i]!=':') i++;
-        dsp->data_vector[len].index=string_to_int(rbuf,
-                pri,
-                i);
+        dsp->data_vector[len].index=string_to_int(rbuf, pri, i);
+        //cout<<dsp->data_vector[len].index<<" ";
         pri=++i;
         while (rbuf[i] && rbuf[i]!=' ') i++;
-        dsp->data_vector[len].value=string_to_float(rbuf,
-                pri,
-                i);
+        dsp->data_vector[len].value=string_to_float(rbuf, pri, i);
+        //cout<<dsp->data_vector[len].value<<" ";
         len++;
     }
     dsp->data_vector_length=len;
+    //cout<<endl;
 }
 
 // Package sample_buf & node_buf to be continue memory space.
@@ -872,16 +876,19 @@ void M3::M3_Master::load_train_data_serial_gzc(string file_name){
     TIME_DEBUG_OUT << "master begin to send job at first time" << endl;
 
     it=label_file_name.begin();
+    int i=0;
     while (1){
         if (it==label_file_name.end())
             break;
 
         string subset_file_name=(*it).second;
+        
+        //cout<<subset_file_name<<endl;
 
         it++;
 
-        load_subset_data(subset_file_name,0,100,0);
-        load_subset_data(subset_file_name,0,100,1);
+        load_subset_data(subset_file_name,0,100,i);
+        i++;
     }  
 }
 
@@ -947,8 +954,7 @@ void M3::M3_Master::load_subset_data(string file_name,int file_offset,int data_n
         Data_Node * node=new Data_Node[node_len];
         sample->data_vector=node;
 
-        parse_data(read_buf,
-                sample);
+        parse_data(read_buf, sample);
 
         m_my_label=sample->label;
 
@@ -3664,103 +3670,103 @@ int M3::M3_Slave::string_to_int(char * str,
 // !!!WARNING:There may be some mistake that be handle by parameter.
 // !!!WARNING:All "new" and "delete" must be replaced.^_^
 
-M3::M3_Run::M3_Run(){
-}
+//M3::M3_Run::M3_Run(){
+//}
+//
+//M3::M3_Run::~M3_Run(){
+//}
+//
+//// As name
+//float M3::M3_Run::string_to_float(char * str,
+//        int ll,
+//        int rr){
+//    char temp = str[rr];
+//    str[rr] = 0;
+//    float res = atof(&(str[ll]));
+//    str[rr] = temp;
+//    return res;
+//}
+//
+//// As name
+//int M3::M3_Run::string_to_int(char * str,
+//        int ll,
+//        int rr){
+//    char temp = str[rr];
+//    str[rr] = 0;
+//    int res = atoi(&(str[ll]));
+//    str[rr] = temp;
+//    return res;
+//}
+//
+//// Parse input data to our format.
+//void M3::M3_Run::parse_data(char * rbuf,
+//        Data_Sample * dsp){
+//    int i=0,pri=0;
+//    int len=0;
+//
+//    while (rbuf[i]!=' ') i++; 
+//    dsp->label=string_to_float(rbuf,
+//            pri,
+//            i);
+//
+//    while (rbuf[i]){
+//        pri=++i;
+//        while (rbuf[i]!=':') i++;
+//        dsp->data_vector[len].index=string_to_int(rbuf,
+//                pri,
+//                i);
+//        pri=++i;
+//        while (rbuf[i] && rbuf[i]!=' ') i++;
+//        dsp->data_vector[len].value=string_to_float(rbuf,
+//                pri,
+//                i);
+//        len++;
+//    }
+//    dsp->data_vector_length=len;
+//}
+//
+//// Unpackage sample_buf as our struct.
+//void M3::M3_Run::subset_sample_unpackage(int subset_num,
+//        int * subset_len,
+//        Data_Sample * sample_buf,
+//        Data_Sample ** sample_subset,
+//        int & node_len){
+//    node_len=0;
+//    int i;
+//    int index=0;
+//    for (i=0;i<subset_num;i++){
+//        sample_subset[i]=&sample_buf[index];
+//        int j;
+//        for (j=0;j<subset_len[i];j++)
+//            node_len+=sample_buf[index+j].data_vector_length;
+//        index+=subset_len[i];
+//
+//    }
+//}
+//
+//// Unpackage sample_buf as our struct.
+//void M3::M3_Run::subset_node_unpackage(Data_Sample * sample_buf,
+//        Data_Node * node_buf,
+//        int sb_len){
+//    int i;
+//    int index=0;
+//    for (i=0;i<sb_len;i++){
+//        sample_buf[i].data_vector=&node_buf[index];
+//        index+=sample_buf[i].data_vector_length;
+//    }
+//}
 
-M3::M3_Run::~M3_Run(){
-}
-
-// As name
-float M3::M3_Run::string_to_float(char * str,
-        int ll,
-        int rr){
-    char temp = str[rr];
-    str[rr] = 0;
-    float res = atof(&(str[ll]));
-    str[rr] = temp;
-    return res;
-}
-
-// As name
-int M3::M3_Run::string_to_int(char * str,
-        int ll,
-        int rr){
-    char temp = str[rr];
-    str[rr] = 0;
-    int res = atoi(&(str[ll]));
-    str[rr] = temp;
-    return res;
-}
-
-// Parse input data to our format.
-void M3::M3_Run::parse_data(char * rbuf,
-        Data_Sample * dsp){
-    int i=0,pri=0;
-    int len=0;
-
-    while (rbuf[i]!=' ') i++; 
-    dsp->label=string_to_float(rbuf,
-            pri,
-            i);
-
-    while (rbuf[i]){
-        pri=++i;
-        while (rbuf[i]!=':') i++;
-        dsp->data_vector[len].index=string_to_int(rbuf,
-                pri,
-                i);
-        pri=++i;
-        while (rbuf[i] && rbuf[i]!=' ') i++;
-        dsp->data_vector[len].value=string_to_float(rbuf,
-                pri,
-                i);
-        len++;
-    }
-    dsp->data_vector_length=len;
-}
-
-// Unpackage sample_buf as our struct.
-void M3::M3_Run::subset_sample_unpackage(int subset_num,
-        int * subset_len,
-        Data_Sample * sample_buf,
-        Data_Sample ** sample_subset,
-        int & node_len){
-    node_len=0;
-    int i;
-    int index=0;
-    for (i=0;i<subset_num;i++){
-        sample_subset[i]=&sample_buf[index];
-        int j;
-        for (j=0;j<subset_len[i];j++)
-            node_len+=sample_buf[index+j].data_vector_length;
-        index+=subset_len[i];
-
-    }
-}
-
-// Unpackage sample_buf as our struct.
-void M3::M3_Run::subset_node_unpackage(Data_Sample * sample_buf,
-        Data_Node * node_buf,
-        int sb_len){
-    int i;
-    int index=0;
-    for (i=0;i<sb_len;i++){
-        sample_buf[i].data_vector=&node_buf[index];
-        index+=sample_buf[i].data_vector_length;
-    }
-}
-
-Classifier * M3::M3_Run::make_classifier(){
-    Classifier_Parameter* hossTemPara = M3_Factory::instance().create_parameter(m3_parameter->classifier_parameter_rank);
-    int * f_argc;
-    char ** f_argv;
-    m3_parameter->parse_as_cmd("classifier.config",&f_argc,&f_argv);
-    hossTemPara->Parse(*f_argc,f_argv);
-    m3_parameter->rm_parse_as_cmd(&f_argc,&f_argv);
-    Classifier* cler = M3_Factory::instance().create_classifier(m3_parameter->classifier_rank,hossTemPara);//new libsvm(hossTemPara);
-    delete hossTemPara;
-    return cler;
-}
+//Classifier * M3::M3_Run::make_classifier(){
+//    Classifier_Parameter* hossTemPara = M3_Factory::instance().create_parameter(m3_parameter->classifier_parameter_rank);
+//    int * f_argc;
+//    char ** f_argv;
+//    m3_parameter->parse_as_cmd("classifier.config",&f_argc,&f_argv);
+//    hossTemPara->Parse(*f_argc,f_argv);
+//    m3_parameter->rm_parse_as_cmd(&f_argc,&f_argv);
+//    Classifier* cler = M3_Factory::instance().create_classifier(m3_parameter->classifier_rank,hossTemPara);//new libsvm(hossTemPara);
+//    delete hossTemPara;
+//    return cler;
+//}
 
 //// Main train block.
 //void M3::M3_Run::training_train_data(){
