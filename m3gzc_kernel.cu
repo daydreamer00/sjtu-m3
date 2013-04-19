@@ -8,7 +8,7 @@
 using namespace std;
 
 __device__ void print(int value){
-    //if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==1 && threadIdx.y==0) 
+    if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==1) 
         printf("block %d,%d, thread %d,%d, value %d\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -18,7 +18,7 @@ __device__ void print(int x,int y,int value){
 }
 
 __device__ void print(float value){
-    //if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==1 && threadIdx.y==0) 
+    if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==1) 
         printf("block %d,%d, thread %d,%d, value %f\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -135,7 +135,7 @@ __global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const 
 
     float theta2=0.25*sum0;
 
-    float result=exp10f(-sum1/theta2)-exp10f(-sum2/theta2);
+    float result=expf(-sum1/theta2)-expf(-sum2/theta2);
 
     //print(result);
 
