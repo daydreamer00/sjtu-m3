@@ -104,10 +104,10 @@ int m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2){
 
     cudaMemcpy(resultMat,d_resultMat,resultSize*sizeof(float),cudaMemcpyDeviceToHost);
 
-    //for(int i=0;i<resultSize;i++){
-    //    if((i)%sss2.numSample==0) cout<<endl;
-    //    cout<<resultMat[i]<<'\t';
-    //}
+    for(int i=0;i<resultSize;i++){
+        if((i)%sss2.numSample==0) cout<<endl;
+        cout<<resultMat[i]<<'\t';
+    }
     cout<<endl;
 
 }

@@ -7,6 +7,7 @@
 
 #define BLOCK_SIZE 16
 #define AVERAGE_DATA_PER_SAMPLE 100
+#define SQUARE(x) (x*x)
 
 using namespace std;
 
@@ -20,10 +21,16 @@ __device__ void print(int x,int y,int value){
         printf("block %d,%d, thread %d,%d, value %d\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
+__device__ void print(int x,int y,char * value){
+    //if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==x && threadIdx.y==y) 
+        printf("block %d,%d, thread %d,%d, value %s\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
+}
+
 __device__ void print(float value){
     if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==1) 
         printf("block %d,%d, thread %d,%d, value %f\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
+
 
 __device__ float getDistance(const Data_Node * data,const int dataLength,const int * dataNodeIndexArray,const float * dataNodeValueArray,const int dataNodeNum){
     float sum=0;
@@ -104,32 +111,48 @@ __device__ float getDistance(const int * dataNodeIndexArray1,const float * dataN
     return sum;
 }
 
-__device__ void loadToSharedMemory(int ix,int iy,SerializedSampleSet *sss1,SerializedSampleSet *sss2,
-        int *dataOffsetArray1,int *dataIndexArray1,int *dataValueArray1,
-        int *dataOffsetArray2,int *dataIndexArray2,int *dataValueArray2){
+
+__device__ void loadToSharedMemory(int ix,int iy,const SerializedSampleSet *sss1,const SerializedSampleSet *sss2,
+        int *dataOffsetArray1,int *dataIndexArray1,float *dataValueArray1,
+        int *dataOffsetArray2,int *dataIndexArray2,float *dataValueArray2){
 
     if(threadIdx.y==blockDim.y-1) dataOffsetArray1[threadIdx.x]=sss1->dataNodeOffsetArray[ix];
     if(threadIdx.x==blockDim.x-1) dataOffsetArray2[threadIdx.y]=sss2->dataNodeOffsetArray[iy];
 
-    int ix0=blockIdx.x*blockDim.x,iy0=blockIdx.y*blockIdx.y;
-    int xbegin=ix0>0?sss1->dataNodeOffsetArray[ix0-1]:0;
-    int ybegin=iy0>0?sss2->dataNodeOffsetArray[iy0-1]:0;
-    int xend=sss1->dataNodeOffsetArray[ix0+blockDim.x-1];
-    int yend=sss2->dataNodeOffsetArray[iy0+blockDim.y-1];
+    //These variables should be in shared memory
+    //int ix0,iy0,ix1,iy1;
+    //int xbegin,ybegin,xend,yend;
+
+    //if(threadIdx.x==0 && threadIdx.y==0){
+    //This block of code needs only execute once on a block
+        int ix0=blockIdx.x*blockDim.x,iy0=blockIdx.y*blockIdx.y;
+        int ix1=blockIdx.x<gridDim.x-1?ix0+blockDim.x-1:sss1->numSample-1;
+        int iy1=blockIdx.y<gridDim.y-1?iy0+blockDim.y-1:sss2->numSample-1;
+        int xbegin=ix0>0?sss1->dataNodeOffsetArray[ix0-1]:0;
+        int ybegin=iy0>0?sss2->dataNodeOffsetArray[iy0-1]:0;
+        int xend=sss1->dataNodeOffsetArray[ix1];
+        int yend=sss2->dataNodeOffsetArray[iy1];
+    //}
+
+    //print(xend);
+
+    if(xend-xbegin>BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE || yend-ybegin>BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE)
+        print(0,0,"too many data");
+
     if(xend-xbegin>0) 
         for(int i=0;i<(xend-xbegin-1)/(blockDim.x*blockDim.y)+1;i++) {
-            int j=xbegin+i*blockDim.x*blockDim.y+threadIdx.x*blockDim.y+threadIdx.y;
-            if(j<xend) {
-                dataIndexArray1[j]=sss1->dataNodeIndexArray[j];
-                dataValueArray1[j]=sss1->dataNodeValueArray[j];
+            int j=i*blockDim.x*blockDim.y+threadIdx.x*blockDim.y+threadIdx.y;
+            if(j+xbegin<xend) {
+                dataIndexArray1[j]=sss1->dataNodeIndexArray[xbegin+j];
+                dataValueArray1[j]=sss1->dataNodeValueArray[xbegin+j];
             }
         }
     if(yend-ybegin>0) 
         for(int i=0;i<(yend-ybegin-1)/(blockDim.x*blockDim.y)+1;i++) {
             int j=ybegin+i*blockDim.x*blockDim.y+threadIdx.x*blockDim.y+threadIdx.y;
-            if(j<yend) {
-                dataIndexArray2[j]=sss2->dataNodeIndexArray[j];
-                dataValueArray2[j]=sss2->dataNodeValueArray[j];
+            if(j+ybegin<yend) {
+                dataIndexArray2[j]=sss2->dataNodeIndexArray[ybegin+j];
+                dataValueArray2[j]=sss2->dataNodeValueArray[ybegin+j];
             }
         }
 }
@@ -140,7 +163,6 @@ __global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const 
     int iy=blockIdx.y*blockDim.y+threadIdx.y;
     float x=0,x1=0,x2=0,tmp=0;
 
-    int lx=0,ly=0;
     if(ix>=sss1->numSample) return;
     if(iy>=sss2->numSample) return;
     int xbegin=ix>0?sss1->dataNodeOffsetArray[ix-1]:0;
@@ -201,14 +223,22 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
             dataOffsetArray2,dataIndexArray2,dataValueArray2);
 
     __syncthreads();
+    //for(int i=0;i<BLOCK_SIZE;i++) print(dataIndexArray2[i]);
 
-    int lx=0,ly=0;
     if(ix>=sss1->numSample) return;
     if(iy>=sss2->numSample) return;
-    int xbegin=ix>0?sss1->dataNodeOffsetArray[ix-1]:0;
-    int ybegin=iy>0?sss2->dataNodeOffsetArray[iy-1]:0;
-    int xend=sss1->dataNodeOffsetArray[ix];
-    int yend=sss2->dataNodeOffsetArray[iy];
+
+    int xbegin=ix>0?dataOffsetArray1[ix-1]:0;
+    int ybegin=iy>0?dataOffsetArray2[iy-1]:0;
+    int xend=dataOffsetArray1[ix];
+    int yend=dataOffsetArray2[iy];
+
+    if(threadIdx.y==0)
+        sum1[threadIdx.x]=getDistance(data,*dataLength,&(dataIndexArray1[xbegin]),&(dataValueArray1[xbegin]),xend-xbegin);
+    if(threadIdx.x==0)
+        sum2[threadIdx.y]=getDistance(data,*dataLength,&(dataIndexArray2[ybegin]),&(dataValueArray2[ybegin]),yend-ybegin);
+
+    __syncthreads();
 
     float sum0=0;
     //float sum1=0,sum2=0;
@@ -223,11 +253,8 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     //print(sss2->dataNodeValueArray[ybegin+1]);
     //print(sss2->dataNodeValueArray[ybegin+2]);
 
-    sum0=getDistance(&(sss1->dataNodeIndexArray[xbegin]),&(sss1->dataNodeValueArray[xbegin]),xend-xbegin,&(sss2->dataNodeIndexArray[ybegin]),&(sss2->dataNodeValueArray[ybegin]),yend-ybegin);
+    sum0=getDistance(&(dataIndexArray1[xbegin]),&(dataValueArray1[xbegin]),xend-xbegin,&(dataIndexArray2[ybegin]),&(dataValueArray2[ybegin]),yend-ybegin);
     
-    //sum1=getDistance(data,*dataLength,&(sss1->dataNodeIndexArray[xbegin]),&(sss1->dataNodeValueArray[xbegin]),xend-xbegin);
-    //sum2=getDistance(data,*dataLength,&(sss2->dataNodeIndexArray[ybegin]),&(sss2->dataNodeValueArray[ybegin]),yend-ybegin);
-
     //print(sum0);
     //print(sum1);
     //print(sum2);
@@ -235,11 +262,11 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     float theta2=0.25*sum0;
 
     float result;
-    //result=expf(-sum1/theta2)-expf(-sum2/theta2);
+    result=expf(-sum1[threadIdx.x]/theta2)-expf(-sum2[threadIdx.y]/theta2);
 
-    ////print(result);
+    //print(result);
 
-    //resultMat[ix*(sss2->numSample)+iy]=result;
+    resultMat[ix*(sss2->numSample)+iy]=result;
 
     return;
 }
