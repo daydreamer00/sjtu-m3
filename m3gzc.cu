@@ -43,17 +43,15 @@ int m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2){
     sss1.print();
     sss2.print();
 
-    if(!InitGPUSet()) {
-        puts("Device is not ready\n");
-        exit(0);
-    }
     cudaSetDevice(0);
-    if(!cuPrintInit()) {
-        puts("cuPrint init failed\n");
-        exit(0);
-    }
-    
-    cudaPrintfDisplay(stdout,true);
+
+    cudaError_t cudaerr;
+    int attr=0;
+
+    cudaerr=cudaDeviceGetAttribute(&attr,cudaDevAttrMaxSharedMemoryPerBlock,0);
+    if (cudaerr != CUDA_SUCCESS) 
+        printf("error \"%s\".\n", cudaGetErrorString(cudaerr));
+    cout<<"Max shared mem per block(bytes): "<<attr<<endl;
 
     Data_Node * test_data=new Data_Node,*d_test_data;
     test_data->index=1;
@@ -65,7 +63,7 @@ int m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2){
     int resultSize=sss1.numSample*sss2.numSample;//SerializedSampleSet::max_num_sample*SerializedSampleSet::max_num_sample;
     float *resultMat=new float[resultSize];
     float * d_resultMat;
-    int BLOCK_SIZE=8;
+    //int BLOCK_SIZE=16;
 
     SerializedSampleSet *d_sss1,*d_sss2;
 
@@ -93,8 +91,9 @@ int m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2){
     }
 
     m3gzcKernel<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_resultMat);
+    //m3gzcKernelWithSharedMemory<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_resultMat);
 
-    //reportError();
+    reportError();
 
     {
         cudaError_t cudaerr = cudaDeviceSynchronize();
@@ -105,13 +104,12 @@ int m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2){
 
     cudaMemcpy(resultMat,d_resultMat,resultSize*sizeof(float),cudaMemcpyDeviceToHost);
 
-    for(int i=0;i<resultSize;i++){
-        if((i)%sss2.numSample==0) cout<<endl;
-        cout<<resultMat[i]<<'\t';
-    }
+    //for(int i=0;i<resultSize;i++){
+    //    if((i)%sss2.numSample==0) cout<<endl;
+    //    cout<<resultMat[i]<<'\t';
+    //}
     cout<<endl;
 
-    cudaPrintfEnd();
 }
 
 

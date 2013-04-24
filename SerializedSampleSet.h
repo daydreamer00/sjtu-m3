@@ -28,7 +28,11 @@ class SerializedSampleSet {
         };
 
         void print(){
-            cout<<"index :";
+            cout<<"offset :";
+            for(int i=0;i<numSample;i++){
+                cout<<dataNodeOffsetArray[i]<<' ';
+            }
+            cout<<endl<<"index :";
             for(int i=0;i<numSample;i++){
                 cout<<dataNodeIndexArray[i]<<' ';
             }
