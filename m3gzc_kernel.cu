@@ -112,7 +112,9 @@ __device__ float getDistance(const int * dataNodeIndexArray1,const float * dataN
 }
 
 
-__device__ void loadToSharedMemory(int ix,int iy,const SerializedSampleSet *sss1,const SerializedSampleSet *sss2,
+__device__ void loadToSharedMemory(int ix0,int ix1,int iy0,int iy1,
+        int xbegin,int xend,int ybegin,int yend,
+        int ix,int iy,const SerializedSampleSet *sss1,const SerializedSampleSet *sss2,
         int *dataOffsetArray1,int *dataIndexArray1,float *dataValueArray1,
         int *dataOffsetArray2,int *dataIndexArray2,float *dataValueArray2){
 
@@ -125,13 +127,13 @@ __device__ void loadToSharedMemory(int ix,int iy,const SerializedSampleSet *sss1
 
     //if(threadIdx.x==0 && threadIdx.y==0){
     //This block of code needs only execute once on a block
-        int ix0=blockIdx.x*blockDim.x,iy0=blockIdx.y*blockIdx.y;
-        int ix1=blockIdx.x<gridDim.x-1?ix0+blockDim.x-1:sss1->numSample-1;
-        int iy1=blockIdx.y<gridDim.y-1?iy0+blockDim.y-1:sss2->numSample-1;
-        int xbegin=ix0>0?sss1->dataNodeOffsetArray[ix0-1]:0;
-        int ybegin=iy0>0?sss2->dataNodeOffsetArray[iy0-1]:0;
-        int xend=sss1->dataNodeOffsetArray[ix1];
-        int yend=sss2->dataNodeOffsetArray[iy1];
+        //int ix0=blockIdx.x*blockDim.x,iy0=blockIdx.y*blockIdx.y;
+        //int ix1=blockIdx.x<gridDim.x-1?ix0+blockDim.x-1:sss1->numSample-1;
+        //int iy1=blockIdx.y<gridDim.y-1?iy0+blockDim.y-1:sss2->numSample-1;
+        //int xbegin=ix0>0?sss1->dataNodeOffsetArray[ix0-1]:0;
+        //int ybegin=iy0>0?sss2->dataNodeOffsetArray[iy0-1]:0;
+        //int xend=sss1->dataNodeOffsetArray[ix1];
+        //int yend=sss2->dataNodeOffsetArray[iy1];
     //}
 
     //print(xend);
@@ -210,15 +212,30 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     __shared__ float dataValueArray1[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
     __shared__ float dataValueArray2[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
 
+    __shared__ int ixBlockBegin,ixBlockEnd,iyBlockBegin,iyBlockEnd;
+    __shared__ int xBlockBegin,xBlockEnd,yBlockBegin,yBlockEnd;
+
     //__shared__ float dataValueArray3[1200000]; 
     //dataValueArray3[1199999]=0;
     
+    if(threadIdx.x==0 && threadIdx.y==0){
+        ixBlockBegin=blockIdx.x*blockDim.x;
+        iyBlockBegin=blockIdx.y*blockIdx.y;
+        ixBlockEnd=blockIdx.x<gridDim.x-1?ixBlockBegin+blockDim.x-1:sss1->numSample-1;
+        iyBlockEnd=blockIdx.y<gridDim.y-1?iyBlockBegin+blockDim.y-1:sss2->numSample-1;
+        xBlockBegin=ixBlockBegin>0?sss1->dataNodeOffsetArray[ixBlockBegin-1]:0;
+        yBlockBegin=iyBlockBegin>0?sss2->dataNodeOffsetArray[iyBlockBegin-1]:0;
+        xBlockEnd=sss1->dataNodeOffsetArray[ixBlockEnd];
+        yBlockEnd=sss2->dataNodeOffsetArray[iyBlockEnd];
+    }
 
     int ix=blockIdx.x*blockDim.x+threadIdx.x;
     int iy=blockIdx.y*blockDim.y+threadIdx.y;
     float x=0,x1=0,x2=0,tmp=0;
 
-    loadToSharedMemory(ix,iy,sss1,sss2,
+    loadToSharedMemory(ixBlockBegin,ixBlockEnd,iyBlockBegin,iyBlockEnd,
+            xBlockBegin,xBlockEnd,yBlockBegin,yBlockEnd,
+            ix,iy,sss1,sss2,
             dataOffsetArray1,dataIndexArray1,dataValueArray1,
             dataOffsetArray2,dataIndexArray2,dataValueArray2);
 
