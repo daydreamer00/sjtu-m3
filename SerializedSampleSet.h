@@ -19,6 +19,7 @@ class SerializedSampleSet {
         static const int max_num_data=MAX_NUM_DATA;
 
         SerializedSampleSet(Sample_Link *m_sample_link_head);
+        SerializedSampleSet(Sample_Link *m_sample_link_head,bool *enableFlagArray);
         SerializedSampleSet(){
             memset(labelArray,0,sizeof(labelArray));
             numSample=0;

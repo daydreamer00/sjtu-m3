@@ -28,9 +28,12 @@
 /* #include "libsvm.h" */
 /* #include "svm_light.h" */
 
+#define SHARD_SIZE 128
+
 using namespace std;
 
 namespace M3{
+    
     const int max_label_index=1;
 
     bool rank_master(int rank);
@@ -49,13 +52,16 @@ namespace M3{
     void parse();
     void initialize(int argc, char * argv[]);
     void finalize();
-    void load_train_data();
+    void load_train_data(int shardx,int shardy);
     //void divide_train_data();
     //void training_train_data();
-    void classify_test_data();
+    void classify_test_data(int * resultArray);
     //void score_test_data();
     //void compare_true_label();
-
+    int getFileOffset(int i);
+    void setFileOffset(int i,int value);
+    bool getEnableFlag(int i);
+    void setEnableFlag(int i,bool value);
 
     class M3_Master{
         private:
@@ -253,6 +259,7 @@ namespace M3{
             
             Sample_Link * m_sample_link_head[2],* m_sample_link_tail[2];
             int m_train_data_num[2];
+            bool enableFlagArray[SHARD_SIZE];
 
             Data_Sample ** m_sample_arr[2];
 
@@ -306,16 +313,18 @@ namespace M3{
 
             //void load_train_data_serial(string file_name, // The file's name. 
             //        vector<bool> need_train_index); // The table point out which data need to be trained. 
-            void load_train_data_serial_gzc(string file_name);
+            void load_train_data_serial_gzc(int shardx,int shardy,string file_name);
 
             //void load_train_data_parallel(string file_name);
 
-            void load_subset_data(string file_name,int offset,int data_num_to_load,int label_index);
+            int load_subset_data(string file_name,int offset,int data_num_to_load,int label_index);
 
             void data_unpackage(Data_Sample * sample_buf,
                     Data_Node * node_buf,
                     int sp_buf_len,
                     int nd_buf_len,int label_index); 
+
+            void cleanSubsetData(int i);
 
             //void check_divide_data();
 
@@ -357,12 +366,19 @@ namespace M3{
             //void score_test_data_sematric_pruning(vector<bool> test_flag);
 
         public:
+            int file_offset[2];
             M3_Master();
             ~M3_Master();
-            void load_train_data(const string &);
+            void load_train_data(int shardx,int shardy,const string &);
             //void divide_train_data();
             void training_train_data();
-            void classify_test_data();
+            void classify_test_data(int * resultArray);
+            bool getEnableFlag(int i){
+                return enableFlagArray[i];
+            }
+            void setEnableFlag(int i,bool value){
+                enableFlagArray[i]=value;
+            }
             //void score_test_data();
             //void compare_true_label(const string &);
     };
@@ -824,6 +840,10 @@ namespace M3{
     //        //void classify_test_data();
     //};
 
+    static M3_Master * m3_master;
+    static M3_Slave * m3_slave;
+    //static M3_Run * m3_run;
+    
     static M3_Parameter * m3_parameter;
 
     static int m3_all_process_num;
@@ -840,9 +860,6 @@ namespace M3{
     //static MPI_Datatype MPI_Data_Sample;
     //static MPI_Datatype MPI_Subset_Info;
 
-    static M3_Master * m3_master;
-    static M3_Slave * m3_slave;
-    //static M3_Run * m3_run;
 
     static ofstream debug_out;
     static double m3_start_time;

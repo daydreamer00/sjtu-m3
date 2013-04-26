@@ -4,7 +4,7 @@
 #include<iostream>
 #include"SerializedSampleSet.h"
 
-int m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2);
+int*  m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2);
 
 #endif
 

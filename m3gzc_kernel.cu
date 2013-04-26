@@ -8,11 +8,12 @@
 #define BLOCK_SIZE 16
 #define AVERAGE_DATA_PER_SAMPLE 100
 #define SQUARE(x) (x*x)
+#define THRESHOLD 0.9
 
 using namespace std;
 
 __device__ void print(int value){
-    if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==1) 
+    if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==2) 
         printf("block %d,%d, thread %d,%d, value %d\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -27,7 +28,7 @@ __device__ void print(int x,int y,char * value){
 }
 
 __device__ void print(float value){
-    if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==1) 
+    if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==2) 
         printf("block %d,%d, thread %d,%d, value %f\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -149,12 +150,14 @@ __device__ void loadToSharedMemory(int ix0,int ix1,int iy0,int iy1,
                 dataValueArray1[j]=sss1->dataNodeValueArray[xbegin+j];
             }
         }
+    //print(yend);
     if(yend-ybegin>0) 
         for(int i=0;i<(yend-ybegin-1)/(blockDim.x*blockDim.y)+1;i++) {
-            int j=ybegin+i*blockDim.x*blockDim.y+threadIdx.x*blockDim.y+threadIdx.y;
+            int j=i*blockDim.x*blockDim.y+threadIdx.x*blockDim.y+threadIdx.y;
             if(j+ybegin<yend) {
                 dataIndexArray2[j]=sss2->dataNodeIndexArray[ybegin+j];
                 dataValueArray2[j]=sss2->dataNodeValueArray[ybegin+j];
+                //print(dataValueArray2[j]);
             }
         }
 }
@@ -176,7 +179,6 @@ __global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const 
     
     //print(ix);
     //print(iy);
-    //cuPrintf("%d\n",3);
     //print(xbegin);
     //print(sss1->dataNodeValueArray[xbegin]);
     //print(ybegin);
@@ -228,10 +230,15 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
         xBlockEnd=sss1->dataNodeOffsetArray[ixBlockEnd];
         yBlockEnd=sss2->dataNodeOffsetArray[iyBlockEnd];
     }
+    __syncthreads();
 
     int ix=blockIdx.x*blockDim.x+threadIdx.x;
     int iy=blockIdx.y*blockDim.y+threadIdx.y;
     float x=0,x1=0,x2=0,tmp=0;
+
+    //print(yBlockBegin);
+    //print(iyBlockEnd);
+    //print(yBlockEnd);
 
     loadToSharedMemory(ixBlockBegin,ixBlockEnd,iyBlockBegin,iyBlockEnd,
             xBlockBegin,xBlockEnd,yBlockBegin,yBlockEnd,
@@ -269,6 +276,8 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     //print(sss2->dataNodeValueArray[ybegin]);
     //print(sss2->dataNodeValueArray[ybegin+1]);
     //print(sss2->dataNodeValueArray[ybegin+2]);
+    //print(dataValueArray1[xbegin]);
+    //print(dataValueArray2[ybegin]);
 
     sum0=getDistance(&(dataIndexArray1[xbegin]),&(dataValueArray1[xbegin]),xend-xbegin,&(dataIndexArray2[ybegin]),&(dataValueArray2[ybegin]),yend-ybegin);
     
@@ -285,5 +294,30 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
 
     resultMat[ix*(sss2->numSample)+iy]=result;
 
+    return;
+}
+
+__global__ void minmaxKernel(float *resultMat,int width,int length,int *resultArray){
+    __shared__ int sharedWidth,sharedLength;
+    if(blockIdx.x==0 && threadIdx.x==0) {
+        sharedWidth=width;
+        sharedLength=length;
+    }
+    __syncthreads();
+    int x=blockIdx.x*blockDim.x+threadIdx.x;
+    if(x>=sharedWidth) {
+        resultArray[x]=1;
+        return;
+    }
+    int i=0;
+    float min=1;
+    while(1){
+        if(i==sharedLength) break;
+        if(resultMat[x*sharedLength+i]<min) min=resultMat[x*sharedLength+i];
+        i++;
+    }
+    if(min>THRESHOLD) resultArray[x]=1;
+    else if (min<-THRESHOLD) resultArray[x]=-1;
+    else resultArray[x]=0;
     return;
 }

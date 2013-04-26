@@ -38,7 +38,7 @@ void reportError(){
     else printf("success\n");
 }
 
-int m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2){
+int *m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2){
 
     sss1.print();
     sss2.print();
@@ -110,6 +110,46 @@ int m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2){
     }
     cout<<endl;
 
+    int *resultArray= new int[sss1.numSample];
+    int *d_resultArray;
+    cudaMalloc(&d_resultArray,sss1.numSample*sizeof(int));
+
+    int threadsPerBlock=128;
+    int blockPerGrid=(sss1.numSample-1)/threadsPerBlock+1;
+
+    {
+        cudaError_t cudaerr = cudaDeviceSynchronize();
+        if (cudaerr != CUDA_SUCCESS) 
+            printf("before kernel launch failed with error \"%s\".\n", cudaGetErrorString(cudaerr));
+        else printf("before kernel launch success\n");
+    }
+    minmaxKernel<<<blockPerGrid,threadsPerBlock>>>(d_resultMat,sss1.numSample,sss2.numSample,d_resultArray);
+
+    reportError();
+
+    {
+        cudaError_t cudaerr = cudaDeviceSynchronize();
+        if (cudaerr != CUDA_SUCCESS) 
+            printf("kernel launch failed with error \"%s\".\n", cudaGetErrorString(cudaerr));
+        else printf("kernel launch success\n");
+    }
+
+    cudaMemcpy(resultArray,d_resultArray,sss1.numSample*sizeof(int),cudaMemcpyDeviceToHost);
+
+    cout<<endl;
+    for(int i=0;i<sss1.numSample;i++){
+        cout<<resultArray[i]<<' ';
+    }
+    cout<<endl;
+
+    cudaFree(d_sss1);
+    cudaFree(d_sss2);
+    cudaFree(d_resultMat);
+    cudaFree(d_test_data);
+    cudaFree(d_test_data_length);
+    cudaFree(d_resultArray);
+
+    return resultArray;
 }
 
 

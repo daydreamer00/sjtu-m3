@@ -118,6 +118,8 @@ void M3::initialize(int argc, char * argv[]){
     m3_continue_subset_size=m3_parameter->modular_size;
     m3_subset_size=m3_parameter->subset_size;
 
+    m3_my_rank=0;
+
     //int init_flag;
     //MPI_Initialized(&init_flag);
     //if (init_flag){
@@ -216,8 +218,8 @@ void M3::initialize(int argc, char * argv[]){
 
     if (rank_master(m3_my_rank))
         m3_master=new M3_Master;
-    else if (rank_slave(m3_my_rank))
-        m3_slave=new M3_Slave;
+    //else if (rank_slave(m3_my_rank))
+    //    m3_slave=new M3_Slave;
     //else if (rank_run(m3_my_rank))
     //    m3_run=new M3_Run;
 }
@@ -246,14 +248,14 @@ void M3::finalize(){
     //    delete m3_run;
 }
 
-void M3::load_train_data(){
+void M3::load_train_data(int shardx,int shardy){
     if (rank_master(m3_my_rank)){
 
         // debug
         // running flag
         cout << "The master is prepare reading" << endl;
 
-        m3_master->load_train_data(m3_parameter->train_data);
+        m3_master->load_train_data(shardx,shardy,m3_parameter->train_data);
         
         cout<< "The master read done"<<endl;
     }
@@ -310,12 +312,12 @@ void M3::load_train_data(){
 //    MPI_Barrier(MPI_COMM_WORLD);
 //}
 
-void M3::classify_test_data(){
+void M3::classify_test_data(int * resultArray){
 
     cout<<"Classify begin"<<endl;
 
     if (rank_master(m3_my_rank))
-        m3_master->classify_test_data();
+        m3_master->classify_test_data(resultArray);
     //else if (rank_run(m3_my_rank))
     //    m3_run->classify_test_data();
 
@@ -324,6 +326,24 @@ void M3::classify_test_data(){
     cout << "The process " << m3_my_rank << " has classify done " << endl;
 
     //MPI_Barrier(MPI_COMM_WORLD);
+}
+
+int M3::getFileOffset(int i){
+    if(i>1) exit(1);
+    return m3_master->file_offset[i];
+}
+
+void M3::setFileOffset(int i,int value){
+    if(i>1) exit(1);
+    m3_master->file_offset[i]=value;
+}
+
+
+bool M3::getEnableFlag(int i){
+    return m3_master->getEnableFlag(i);
+}
+void M3::setEnableFlag(int i,bool value){
+    m3_master->setEnableFlag(i,value);
 }
 
 //void M3::score_test_data(){
@@ -381,7 +401,10 @@ M3::M3_Master::M3_Master(){
         m_sample_link_tail[i]=NULL;
 
         m_train_data_num[i]=0;
+        file_offset[i]=0;
     }
+
+    for(int i=0;i<SHARD_SIZE;i++) enableFlagArray[i]=true;
     m_memory_enough=true;
 }
 
@@ -848,7 +871,7 @@ void M3::M3_Master::data_unpackage(Data_Sample * sample_buf,
 }
 
 
-void M3::M3_Master::load_train_data_serial_gzc(string file_name){
+void M3::M3_Master::load_train_data_serial_gzc(int shardx,int shardy,string file_name){
  
     Data_Split * data_split=new Data_Split(file_name,READ_BUF_SIZE);
     data_split->split();
@@ -887,18 +910,21 @@ void M3::M3_Master::load_train_data_serial_gzc(string file_name){
 
         it++;
 
-        load_subset_data(subset_file_name,0,100,i);
+        if(shardy==0 || i==1) file_offset[i]=load_subset_data(subset_file_name,file_offset[i],SHARD_SIZE,i);
         i++;
     }  
 }
 
-void M3::M3_Master::load_subset_data(string file_name,int file_offset,int data_num_to_load,int label_index){
+int M3::M3_Master::load_subset_data(string file_name,int file_offset,int data_num_to_load,int label_index){
+    cleanSubsetData(label_index);
+    
     char * read_buf=new char[READ_BUF_SIZE];
     FILE * data_file=fopen(file_name.c_str(),"r");
     fseek(data_file,file_offset, SEEK_SET);
     int sample_num=0;
 
     while (!feof(data_file)){
+        if (sample_num==data_num_to_load) break;
 
         if (!M3::memory_test(1,NODE_SIMPLE_BUF_SIZE)){
 
@@ -991,6 +1017,26 @@ void M3::M3_Master::load_subset_data(string file_name,int file_offset,int data_n
         END_DEBUG;
 
     }
+    if (feof(data_file)) return -1;
+    return ftell(data_file);
+}
+
+void M3::M3_Master::cleanSubsetData(int i){
+    Sample_Link * sl,* sl_tmp;
+    for (sl=m_sample_link_head[i];sl!=NULL;){
+        Data_Sample * ds=sl->sample_head;
+        delete [] (ds[0].data_vector);
+        delete [] ds;
+        sl_tmp=sl;
+        sl=sl->next;
+        delete sl_tmp;
+    }
+
+    m_sample_link_head[i]=NULL;
+    m_sample_link_tail[i]=NULL;
+
+    m_train_data_num[i]=0;
+    file_offset[i]=0;
 }
 
 //void M3::M3_Master::load_train_data_parallel(string file_name){
@@ -1193,12 +1239,12 @@ void M3::M3_Master::load_subset_data(string file_name,int file_offset,int data_n
 //
 //}
 
-void M3::M3_Master::load_train_data(const string & filename){
+void M3::M3_Master::load_train_data(int shardx,int shardy,const string & filename){
 
     // debug
     TIME_DEBUG_OUT << "come in the master load_train_data" << endl;
 
-    load_train_data_serial_gzc(filename);
+    load_train_data_serial_gzc(shardx,shardy,filename);
     //if (m3_parameter->m3_load_mode==0){
     //    load_train_data_parallel(filename);
     //}
@@ -2392,11 +2438,33 @@ bool cmp_pruning(const Subset_Info & si_1,
 //
 //}
 
-void M3::M3_Master::classify_test_data(){
+void M3::M3_Master::classify_test_data(int * resultArray){
 
     SerializedSampleSet sss1(m_sample_link_head[0]),sss2(m_sample_link_head[1]);
 
-    m3gzc(sss1,sss2);
+    int mapToOriginal[SHARD_SIZE],j=0;
+
+    for(int i=0;i<sss1.numSample;i++){ 
+        if(getEnableFlag(i)) {
+            mapToOriginal[j]=i;
+            j++;
+        }
+    }
+
+    SerializedSampleSet sss1Trimmed(m_sample_link_head[0],enableFlagArray);
+
+    int * resultArrayTrimmed;
+
+    resultArrayTrimmed=m3gzc(sss1Trimmed,sss2);
+
+    for(int i=0;i<sss1Trimmed.numSample;i++) 
+        if(resultArrayTrimmed[i]<resultArray[mapToOriginal[i]])
+            resultArray[mapToOriginal[i]]=resultArrayTrimmed[i];
+
+    for(int i=0;i<sss1.numSample;i++) 
+        if(resultArray[i]==-1) enableFlagArray[i]=false;
+
+    delete[] resultArrayTrimmed;
 
         //for (int i=1;i<=m3_parameter->running_process_num;i++)
     //    MPI_Send(&M3::testLen,
