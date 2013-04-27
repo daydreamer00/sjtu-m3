@@ -104,8 +104,14 @@ int *m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2){
 
     cudaMemcpy(resultMat,d_resultMat,resultSize*sizeof(float),cudaMemcpyDeviceToHost);
 
-    for(int i=0;i<resultSize;i++){
-        if((i)%sss2.numSample==0) cout<<endl;
+    //for(int i=0;i<resultSize;i++){
+    //    if((i)%sss2.numSample==0) cout<<endl;
+    //    cout<<resultMat[i]<<'\t';
+    //}
+    //cout<<endl;
+
+    for(int i=0;i<16;i++){
+        if((i)%sss2.numSample==0 && i>0) cout<<endl;
         cout<<resultMat[i]<<'\t';
     }
     cout<<endl;
@@ -136,7 +142,6 @@ int *m3gzc(SerializedSampleSet sss1,SerializedSampleSet sss2){
 
     cudaMemcpy(resultArray,d_resultArray,sss1.numSample*sizeof(int),cudaMemcpyDeviceToHost);
 
-    cout<<endl;
     for(int i=0;i<sss1.numSample;i++){
         cout<<resultArray[i]<<' ';
     }

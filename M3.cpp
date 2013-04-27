@@ -112,6 +112,10 @@ void M3::parse(){
 
 void M3::initialize(int argc, char * argv[]){
 
+    Data_Split * data_split=new Data_Split(m3_parameter->train_data,READ_BUF_SIZE);
+    data_split->split();
+    delete data_split;
+
     // There are some parameter need to be determined.
     // For easy to test, I only to let them be a small const
     m3_start_slave_process_rank=m3_parameter->running_process_num+1;
@@ -873,9 +877,9 @@ void M3::M3_Master::data_unpackage(Data_Sample * sample_buf,
 
 void M3::M3_Master::load_train_data_serial_gzc(int shardx,int shardy,string file_name){
  
-    Data_Split * data_split=new Data_Split(file_name,READ_BUF_SIZE);
-    data_split->split();
-    delete data_split;
+    //Data_Split * data_split=new Data_Split(file_name,READ_BUF_SIZE);
+    //data_split->split();
+    //delete data_split;
     
     ifstream data_config("Split_Data/data.config");
     map<float,string> label_file_name;

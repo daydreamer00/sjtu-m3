@@ -15,8 +15,10 @@ int main(int argc,char ** argv){
     int resultArray[SHARD_SIZE];
     for(int i=0;i<SHARD_SIZE;i++) resultArray[i]=1;
 
-    while(M3::getFileOffset(0)!=-1 && 
+    while(M3::getFileOffset(0)!=-1 || 
             M3::getFileOffset(1)!=-1){
+
+        cout<<endl<<"shardx,shardy: "<<shardx<<' '<<shardy<<endl;
 
         if(M3::getFileOffset(1)==-1) {
             for(int i=0;i<SHARD_SIZE;i++) {
@@ -40,6 +42,9 @@ int main(int argc,char ** argv){
         }
 
         shardy++;
+
+        cout<<"offset: "<<M3::getFileOffset(0)<<' '<<M3::getFileOffset(1)<<endl;
+        //if(shardx==0) break;
     }
 
     //if (M3::flag_score()){

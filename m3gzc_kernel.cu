@@ -13,7 +13,7 @@
 using namespace std;
 
 __device__ void print(int value){
-    if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==2) 
+    if(blockIdx.x==1 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==2) 
         printf("block %d,%d, thread %d,%d, value %d\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -38,6 +38,7 @@ __device__ float getDistance(const Data_Node * data,const int dataLength,const i
     float x=0,x1=0;
     int i=0,j=0;
     while(1){
+        if (i==dataLength && j==dataNodeNum) {break;}
         if (i==dataLength){ 
             for(;j<dataNodeNum;j++) sum+=dataNodeValueArray[j]*dataNodeValueArray[j];
             break;
@@ -105,8 +106,8 @@ __device__ float getDistance(const int * dataNodeIndexArray1,const float * dataN
             x2=dataNodeValueArray2[j];
             i++; j++;
         }
-        float tmp=x1-x2;
-        sum+=tmp*tmp;
+        float temp=x1-x2;
+        sum+=temp*temp;
     }
     //print(sum);
     return sum;
@@ -119,7 +120,10 @@ __device__ void loadToSharedMemory(int ix0,int ix1,int iy0,int iy1,
         int *dataOffsetArray1,int *dataIndexArray1,float *dataValueArray1,
         int *dataOffsetArray2,int *dataIndexArray2,float *dataValueArray2){
 
-    if(threadIdx.y==blockDim.y-1) dataOffsetArray1[threadIdx.x]=sss1->dataNodeOffsetArray[ix];
+    if(threadIdx.y==blockDim.y-1) {
+        dataOffsetArray1[threadIdx.x]=sss1->dataNodeOffsetArray[ix];
+        //print(ix);
+    }
     if(threadIdx.x==blockDim.x-1) dataOffsetArray2[threadIdx.y]=sss2->dataNodeOffsetArray[iy];
 
     //These variables should be in shared memory
@@ -237,8 +241,8 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     float x=0,x1=0,x2=0,tmp=0;
 
     //print(yBlockBegin);
-    //print(iyBlockEnd);
     //print(yBlockEnd);
+    //print(iyBlockEnd);
 
     loadToSharedMemory(ixBlockBegin,ixBlockEnd,iyBlockBegin,iyBlockEnd,
             xBlockBegin,xBlockEnd,yBlockBegin,yBlockEnd,
@@ -252,10 +256,10 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     if(ix>=sss1->numSample) return;
     if(iy>=sss2->numSample) return;
 
-    int xbegin=ix>0?dataOffsetArray1[ix-1]:0;
-    int ybegin=iy>0?dataOffsetArray2[iy-1]:0;
-    int xend=dataOffsetArray1[ix];
-    int yend=dataOffsetArray2[iy];
+    int xbegin=threadIdx.x>0?dataOffsetArray1[threadIdx.x-1]:0;
+    int ybegin=threadIdx.y>0?dataOffsetArray2[threadIdx.y-1]:0;
+    int xend=dataOffsetArray1[threadIdx.x];
+    int yend=dataOffsetArray2[threadIdx.y];
 
     if(threadIdx.y==0)
         sum1[threadIdx.x]=getDistance(data,*dataLength,&(dataIndexArray1[xbegin]),&(dataValueArray1[xbegin]),xend-xbegin);
@@ -271,6 +275,7 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     //print(iy);
     //cuPrintf("%d\n",3);
     //print(xbegin);
+    //print(xend);
     //print(sss1->dataNodeValueArray[xbegin]);
     //print(ybegin);
     //print(sss2->dataNodeValueArray[ybegin]);
@@ -306,7 +311,6 @@ __global__ void minmaxKernel(float *resultMat,int width,int length,int *resultAr
     __syncthreads();
     int x=blockIdx.x*blockDim.x+threadIdx.x;
     if(x>=sharedWidth) {
-        resultArray[x]=1;
         return;
     }
     int i=0;
