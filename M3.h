@@ -28,7 +28,7 @@
 /* #include "libsvm.h" */
 /* #include "svm_light.h" */
 
-#define SHARD_SIZE 32 
+#define SHARD_SIZE 128 
 
 using namespace std;
 
@@ -62,6 +62,7 @@ namespace M3{
     void setFileOffset(int i,int value);
     bool getEnableFlag(int i);
     void setEnableFlag(int i,bool value);
+    int getSampleNum(int i);
 
     class M3_Master{
         private:
@@ -378,6 +379,9 @@ namespace M3{
             }
             void setEnableFlag(int i,bool value){
                 enableFlagArray[i]=value;
+            }
+            int getSampleNum(int i){
+                return m_train_data_num[i]; 
             }
             //void score_test_data();
             //void compare_true_label(const string &);

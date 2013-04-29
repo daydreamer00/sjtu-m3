@@ -350,6 +350,10 @@ void M3::setEnableFlag(int i,bool value){
     m3_master->setEnableFlag(i,value);
 }
 
+int M3::getSampleNum(int i){
+    return m3_master->getSampleNum(i);
+}
+
 //void M3::score_test_data(){
 //    if (rank_master(m3_my_rank))
 //        m3_master->score_test_data();
@@ -2459,7 +2463,7 @@ void M3::M3_Master::classify_test_data(int * resultArray){
 
     int * resultArrayTrimmed;
 
-    resultArrayTrimmed=m3gzc(sss1Trimmed,sss2);
+    resultArrayTrimmed=m3gzcGPU(sss1Trimmed,sss2);
 
     for(int i=0;i<sss1Trimmed.numSample;i++) 
         if(resultArrayTrimmed[i]<resultArray[mapToOriginal[i]])

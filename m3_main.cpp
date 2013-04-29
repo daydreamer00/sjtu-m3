@@ -1,5 +1,8 @@
 #include "M3.h"
 #include "util.h"
+#include<fstream>
+
+using namespace std;
 //using namespace M3;
 int main(int argc,char ** argv){
 
@@ -15,20 +18,13 @@ int main(int argc,char ** argv){
     int resultArray[SHARD_SIZE];
     for(int i=0;i<SHARD_SIZE;i++) resultArray[i]=1;
 
-    while(M3::getFileOffset(0)!=-1 || 
-            M3::getFileOffset(1)!=-1){
+    ofstream fout("out.txt");
+    int numSampleArray[2];
+    for(int i=0;i<2;i++) numSampleArray[i]=0;
+
+    while(1){
 
         cout<<endl<<"shardx,shardy: "<<shardx<<' '<<shardy<<endl;
-
-        if(M3::getFileOffset(1)==-1) {
-            for(int i=0;i<SHARD_SIZE;i++) {
-                resultArray[i]=1;
-                M3::setEnableFlag(i,true);
-            }
-            shardx++;
-            shardy=0;
-            M3::setFileOffset(1,0);
-        }
 
         if (M3::flag_train()){
 
@@ -41,11 +37,30 @@ int main(int argc,char ** argv){
             M3::classify_test_data(resultArray);
         }
 
-        shardy++;
-
         cout<<"offset: "<<M3::getFileOffset(0)<<' '<<M3::getFileOffset(1)<<endl;
-        //if(shardx==0) break;
+
+        if(shardy==0) numSampleArray[0]+=M3::getSampleNum(0);
+        if(shardx==0) numSampleArray[1]+=M3::getSampleNum(1);
+
+        if(M3::getFileOffset(1)==-1) 
+            for(int i=0;i<M3::getSampleNum(0);i++)
+                fout<<resultArray[i]<<endl;
+        if(M3::getFileOffset(0)==-1 && M3::getFileOffset(1)==-1) break;
+        shardy++;
+        if(M3::getFileOffset(1)==-1) {
+            for(int i=0;i<SHARD_SIZE;i++) {
+                resultArray[i]=1;
+                M3::setEnableFlag(i,true);
+            }
+            shardx++;
+            shardy=0;
+            M3::setFileOffset(1,0);
+        }
+
+
     }
+
+    cout<<"sample no: "<<numSampleArray[0]<<' '<<numSampleArray[1]<<endl;
 
     //if (M3::flag_score()){
     //    M3::score_test_data();
@@ -54,6 +69,7 @@ int main(int argc,char ** argv){
     //if (M3::flag_compare()){
     //    M3::compare_true_label();
     //}
+    fout.close();
     M3::finalize();
 
     return 0;

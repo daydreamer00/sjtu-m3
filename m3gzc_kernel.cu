@@ -13,7 +13,7 @@
 using namespace std;
 
 __device__ void print(int value){
-    if(blockIdx.x==1 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==2) 
+    if(blockIdx.x==0 && blockIdx.y==1 && threadIdx.x==0 && threadIdx.y==15) 
         printf("block %d,%d, thread %d,%d, value %d\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -28,7 +28,7 @@ __device__ void print(int x,int y,char * value){
 }
 
 __device__ void print(float value){
-    if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==2) 
+    if(blockIdx.x==0 && blockIdx.y==1 && threadIdx.x==0 && threadIdx.y==15) 
         printf("block %d,%d, thread %d,%d, value %f\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -120,11 +120,20 @@ __device__ void loadToSharedMemory(int ix0,int ix1,int iy0,int iy1,
         int *dataOffsetArray1,int *dataIndexArray1,float *dataValueArray1,
         int *dataOffsetArray2,int *dataIndexArray2,float *dataValueArray2){
 
+    int xOffsetBias=0,yOffsetBias=0;
+
+    //if(threadIdx.x==0 && threadIdx.y==0) {
+        xOffsetBias=blockIdx.x==0?0:sss1->dataNodeOffsetArray[ix0-1];
+        yOffsetBias=blockIdx.y==0?0:sss2->dataNodeOffsetArray[iy0-1];
+    //}
+        //print(iy0);
+        //print(sss2->dataNodeOffsetArray[iy0-1]);
+
     if(threadIdx.y==blockDim.y-1) {
-        dataOffsetArray1[threadIdx.x]=sss1->dataNodeOffsetArray[ix];
+        dataOffsetArray1[threadIdx.x]=sss1->dataNodeOffsetArray[ix]-xOffsetBias;
         //print(ix);
     }
-    if(threadIdx.x==blockDim.x-1) dataOffsetArray2[threadIdx.y]=sss2->dataNodeOffsetArray[iy];
+    if(threadIdx.x==blockDim.x-1) dataOffsetArray2[threadIdx.y]=sss2->dataNodeOffsetArray[iy]-yOffsetBias;
 
     //These variables should be in shared memory
     //int ix0,iy0,ix1,iy1;
@@ -226,7 +235,7 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     
     if(threadIdx.x==0 && threadIdx.y==0){
         ixBlockBegin=blockIdx.x*blockDim.x;
-        iyBlockBegin=blockIdx.y*blockIdx.y;
+        iyBlockBegin=blockIdx.y*blockDim.y;
         ixBlockEnd=blockIdx.x<gridDim.x-1?ixBlockBegin+blockDim.x-1:sss1->numSample-1;
         iyBlockEnd=blockIdx.y<gridDim.y-1?iyBlockBegin+blockDim.y-1:sss2->numSample-1;
         xBlockBegin=ixBlockBegin>0?sss1->dataNodeOffsetArray[ixBlockBegin-1]:0;
@@ -278,6 +287,7 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     //print(xend);
     //print(sss1->dataNodeValueArray[xbegin]);
     //print(ybegin);
+    //print(yend);
     //print(sss2->dataNodeValueArray[ybegin]);
     //print(sss2->dataNodeValueArray[ybegin+1]);
     //print(sss2->dataNodeValueArray[ybegin+2]);
