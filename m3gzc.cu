@@ -160,11 +160,13 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
 
 float getDistance2(Data_Sample test_sample,const SerializedSampleSet sss,int i){
     int dataIndexBegin,dataIndexEnd;
-    dataIndexBegin=i==0?0:sss.dataNodeIndexArray[i-1];
-    dataIndexEnd=dataNodeIndexArray[i];
+    dataIndexBegin=i==0?0:sss.dataNodeOffsetArray[i-1];
+    dataIndexEnd=sss.dataNodeOffsetArray[i];
     int j=0,k=dataIndexBegin;
     float sum=0;
+    //cout<<endl<<dataIndexBegin<<endl<<dataIndexEnd<<endl;
     while(1){
+        //cout<<j<<endl<<k<<endl;
         if(j==test_sample.data_vector_length && k==dataIndexEnd) break;
         if(k==dataIndexEnd) {
             sum+=SQUARE(test_sample.data_vector[j].value);
@@ -175,11 +177,13 @@ float getDistance2(Data_Sample test_sample,const SerializedSampleSet sss,int i){
         } if(test_sample.data_vector[j].index < sss.dataNodeIndexArray[k]){
             sum+=SQUARE(test_sample.data_vector[j].value);
             j++;
-        } else if(test_sample.data_vector[j].index < sss.dataNodeIndexArray[k]){
+        } else if(test_sample.data_vector[j].index > sss.dataNodeIndexArray[k]){
             sum+=SQUARE(sss.dataNodeValueArray[k]);
             k++;
         } else {
-            sum+=SQUARE(test_sample.data_vector[j].value)+SQUARE(sss.dataNodeValueArray[k]);
+            float tmp=test_sample.data_vector[j].value-sss.dataNodeValueArray[k];
+            sum+=SQUARE(tmp);
+            //cout<<sum<<endl;
             j++;
             k++;
         }
@@ -187,14 +191,51 @@ float getDistance2(Data_Sample test_sample,const SerializedSampleSet sss,int i){
     return sum;
 }
 
+float getDistance2(const SerializedSampleSet sss1,int i,const SerializedSampleSet sss2,int j){
+    int dataIndexBegin1,dataIndexEnd1;
+    dataIndexBegin1=i==0?0:sss1.dataNodeOffsetArray[i-1];
+    dataIndexEnd1=sss1.dataNodeOffsetArray[i];
+    int dataIndexBegin2,dataIndexEnd2;
+    dataIndexBegin2=j==0?0:sss2.dataNodeOffsetArray[j-1];
+    dataIndexEnd2=sss2.dataNodeOffsetArray[j];
+    int ii=dataIndexBegin1,ij=dataIndexBegin2;
+    float sum=0;
+    while (1){
+        if(ii==dataIndexEnd1 && ij==dataIndexEnd2) break;
+        else if(ii==dataIndexEnd1) {
+            sum+=SQUARE(sss2.dataNodeValueArray[ij]);
+            ij++;
+        }else if (ij==dataIndexEnd2) {
+            sum+=SQUARE(sss1.dataNodeValueArray[ii]);
+            ii++;
+        }else if (sss1.dataNodeIndexArray[ii]<sss2.dataNodeIndexArray[ij]){
+            sum+=SQUARE(sss1.dataNodeValueArray[ii]);
+            ii++;
+        }else if (sss1.dataNodeIndexArray[ii]>sss2.dataNodeIndexArray[ij]){
+            sum+=SQUARE(sss2.dataNodeValueArray[ij]);
+            ij++;
+        } else {
+            float tmp=sss2.dataNodeValueArray[ij]-sss1.dataNodeValueArray[ii];
+            sum+=SQUARE(tmp);
+            ij++;
+            ii++;
+        } 
+    }
+    return sum;
+}
+
 
 int *m3gzcCPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
-    float * sumArray1,*sumArray2,*resultArray;
+    sss1.print();
+    sss2.print();
+
+    float * sumArray1,*sumArray2;
+    int *resultArray;
     sumArray1=new float[sss1.numSample];
     sumArray2=new float[sss2.numSample];
-    resultArray=new float[sss1.numSample];
+    resultArray=new int[sss1.numSample];
     
-    Data_Node * test_data=new Data_Node,*d_test_data;
+    Data_Node * test_data=new Data_Node;
     test_data->index=1;
     test_data->value=1;
 
@@ -205,16 +246,26 @@ int *m3gzcCPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     test_sample.data_vector=test_data;
 
     for(int i=0;i<sss1.numSample;i++) sumArray1[i]=getDistance2(test_sample,sss1,i);
+    cout<<sumArray1[0]<<endl;
     for(int i=0;i<sss2.numSample;i++) sumArray2[i]=getDistance2(test_sample,sss2,i);
 
     for(int i=0;i<sss1.numSample;i++){
         float min=1;
         for(int j=0;j<sss2.numSample;j++) {
-            float v=
-            
+            float sum0=getDistance2(sss1,i,sss2,j);
+            //cout<<i<<' '<<j<<' '<<sum0<<endl;
+            float v=exp(-4*sumArray1[i]/sum0)-exp(-4*sumArray2[j]/sum0);
+            //cout<<i<<' '<<j<<' '<<v<<endl;
+            if (v<min) min=v;
+        }
+
+        //cout<<i<<' '<<min<<endl;
+
+        if(min>THRESHOLD) resultArray[i]=1;
+        else if(min<-THRESHOLD) resultArray[i]=-1;
+        else resultArray[i]=0;
     }
 
     delete test_sample.data_vector;
-    delete test_sample;
+    return resultArray;
 }
-

@@ -2,6 +2,7 @@
 #define _M3GZC_H
 
 #include<iostream>
+#include<cmath>
 #include"SerializedSampleSet.h"
 
 int*  m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2);

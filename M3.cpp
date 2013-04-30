@@ -2464,6 +2464,7 @@ void M3::M3_Master::classify_test_data(int * resultArray){
     int * resultArrayTrimmed;
 
     resultArrayTrimmed=m3gzcGPU(sss1Trimmed,sss2);
+    //resultArrayTrimmed=m3gzcCPU(sss1Trimmed,sss2);
 
     for(int i=0;i<sss1Trimmed.numSample;i++) 
         if(resultArrayTrimmed[i]<resultArray[mapToOriginal[i]])
