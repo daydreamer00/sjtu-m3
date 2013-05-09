@@ -3,6 +3,10 @@
 #include<cstdlib>
 #include<string>
 #include<iostream>
+#include<ctime>
+
+#define TIMER_BEGIN(t) t=clock()
+#define TIMER_PRINT(msg,t) cout<<msg<<" time: "<<(clock()-t)/(double)CLOCKS_PER_SEC<<endl
 
 using namespace std;
 

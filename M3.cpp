@@ -112,6 +112,11 @@ void M3::parse(){
 
 void M3::initialize(int argc, char * argv[]){
 
+
+    Data_Split * data_index=new Data_Split(m3_parameter->classify_data,READ_BUF_SIZE);
+    data_index->indexFile();
+    delete data_index;
+
     Data_Split * data_split=new Data_Split(m3_parameter->train_data,READ_BUF_SIZE);
     data_split->split();
     delete data_split;
@@ -257,11 +262,11 @@ void M3::load_train_data(int shardx,int shardy){
 
         // debug
         // running flag
-        cout << "The master is prepare reading" << endl;
+        cout << "The master is prepare reading train data " << m3_parameter->train_data<< endl;
 
         m3_master->load_train_data(shardx,shardy,m3_parameter->train_data);
         
-        cout<< "The master read done"<<endl;
+        cout<< "The master read train data done"<<endl;
     }
     //else if (rank_slave(m3_my_rank)){
     //    m3_slave->load_train_data();
@@ -276,6 +281,12 @@ void M3::load_train_data(int shardx,int shardy){
     //}
 
     //MPI_Barrier(MPI_COMM_WORLD);
+}
+void M3::load_test_data(int shardz){
+    cout << "The master is prepare reading test data" << endl;
+    //cout<<m3_parameter->classify_data<<endl;
+    m3_master->load_test_data(shardz,m3_parameter->classify_data+"indexed");
+    cout<< "The master read done test data"<<endl;
 }
 
 //void M3::divide_train_data(){
@@ -404,7 +415,8 @@ M3::M3_Master::M3_Master(){
 
     m_free_process=m3_start_slave_process_rank;
 
-    for(int i=0;i<=max_label_index;i++){
+    //for(int i=0;i<=max_label_index;i++){
+    for(int i=0;i<=2;i++){
         m_sample_link_head[i]=NULL;
         m_sample_link_tail[i]=NULL;
 
@@ -418,7 +430,8 @@ M3::M3_Master::M3_Master(){
 
 M3::M3_Master::~M3_Master(){
     Sample_Link * sl,* sl_tmp;
-    for(int i=0;i<=max_label_index;i++){
+    //for(int i=0;i<=max_label_index;i++){
+    for(int i=0;i<=2;i++){
         for (sl=m_sample_link_head[i];sl!=NULL;){
             Data_Sample * ds=sl->sample_head;
             delete [] (ds[0].data_vector);
@@ -909,6 +922,7 @@ void M3::M3_Master::load_train_data_serial_gzc(int shardx,int shardy,string file
     it=label_file_name.begin();
     int i=0;
     while (1){
+        //cout<<i<<endl;
         if (it==label_file_name.end())
             break;
 
@@ -919,8 +933,14 @@ void M3::M3_Master::load_train_data_serial_gzc(int shardx,int shardy,string file
         it++;
 
         if(shardy==0 || i==1) file_offset[i]=load_subset_data(subset_file_name,file_offset[i],SHARD_SIZE,i);
+        //cout<<i<<' '<<file_offset[i]<<endl;
         i++;
     }  
+}
+
+void M3::M3_Master::load_test_data_serial_gzc(int shardz,string file_name){
+    file_offset[2]=load_subset_data(file_name,file_offset[2],TEST_SHARD_SIZE,2);
+
 }
 
 int M3::M3_Master::load_subset_data(string file_name,int file_offset,int data_num_to_load,int label_index){
@@ -1269,6 +1289,11 @@ void M3::M3_Master::load_train_data(int shardx,int shardy,const string & filenam
     //TIME_DEBUG_OUT << "go out the master load_train_data" << endl;
     ////waitForAttach(m3_my_rank);
 }
+
+void M3::M3_Master::load_test_data(int shardz,const string &filename){
+    load_test_data_serial_gzc(shardz,filename);
+}
+
 
 //// Prin middle information.
 //void M3::M3_Master::check_divide_data(){
@@ -2463,8 +2488,11 @@ void M3::M3_Master::classify_test_data(int * resultArray){
 
     int * resultArrayTrimmed;
 
+    clock_t timer;
+    TIMER_BEGIN(timer);
     resultArrayTrimmed=m3gzcGPU(sss1Trimmed,sss2);
     //resultArrayTrimmed=m3gzcCPU(sss1Trimmed,sss2);
+    TIMER_PRINT("Excution",timer);
 
     for(int i=0;i<sss1Trimmed.numSample;i++) 
         if(resultArrayTrimmed[i]<resultArray[mapToOriginal[i]])
@@ -2472,6 +2500,10 @@ void M3::M3_Master::classify_test_data(int * resultArray){
 
     for(int i=0;i<sss1.numSample;i++) 
         if(resultArray[i]==-1) enableFlagArray[i]=false;
+
+    //for(int i=0;i<sss1.numSample;i++) 
+    //    cout<<resultArray[i]<<' ';
+    //cout<<endl;
 
     delete[] resultArrayTrimmed;
 

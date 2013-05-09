@@ -81,4 +81,18 @@ void Data_Split::split(){
     }
 }
 
+void Data_Split::indexFile(){
+    double l;
+    int index=0;
+
+    string out_name=file_name+"indexed";
+    ofstream findexed(out_name.c_str());
+    cout<<out_name<<endl;
+
+    while (file_in >> l){
+        file_in.getline(read_buf,buf_size);
+        findexed << index++ << " " << l << read_buf << endl;
+    }
+    findexed.close();
+}
 #endif

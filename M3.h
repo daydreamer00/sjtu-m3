@@ -28,7 +28,8 @@
 /* #include "libsvm.h" */
 /* #include "svm_light.h" */
 
-#define SHARD_SIZE 128 
+#define SHARD_SIZE 768 
+#define TEST_SHARD_SIZE 100
 
 using namespace std;
 
@@ -53,6 +54,7 @@ namespace M3{
     void initialize(int argc, char * argv[]);
     void finalize();
     void load_train_data(int shardx,int shardy);
+    void load_test_data(int shardz);
     //void divide_train_data();
     //void training_train_data();
     void classify_test_data(int * resultArray);
@@ -258,11 +260,14 @@ namespace M3{
                 }
             };
             
-            Sample_Link * m_sample_link_head[2],* m_sample_link_tail[2];
-            int m_train_data_num[2];
+            Sample_Link * m_sample_link_head[3],* m_sample_link_tail[3];
+            int m_train_data_num[3];
             bool enableFlagArray[SHARD_SIZE];
 
-            Data_Sample ** m_sample_arr[2];
+            //Sample_Link * m_test_sample_link_head,* m_test_sample_link_tail;
+            //int m_test_data_num;
+
+            Data_Sample ** m_sample_arr[3];
 
             bool m_memory_enough;
 
@@ -315,6 +320,7 @@ namespace M3{
             //void load_train_data_serial(string file_name, // The file's name. 
             //        vector<bool> need_train_index); // The table point out which data need to be trained. 
             void load_train_data_serial_gzc(int shardx,int shardy,string file_name);
+            void load_test_data_serial_gzc(int shardz,string file_name);
 
             //void load_train_data_parallel(string file_name);
 
@@ -367,10 +373,12 @@ namespace M3{
             //void score_test_data_sematric_pruning(vector<bool> test_flag);
 
         public:
-            int file_offset[2];
+            int file_offset[3];
+
             M3_Master();
             ~M3_Master();
             void load_train_data(int shardx,int shardy,const string &);
+            void load_test_data(int shardz,const string &file_name);
             //void divide_train_data();
             void training_train_data();
             void classify_test_data(int * resultArray);

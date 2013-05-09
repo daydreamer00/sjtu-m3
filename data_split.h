@@ -28,6 +28,8 @@ class Data_Split{
 
   void split(vector<bool> t_flag);
 
+  void indexFile();
+
  private:
 
   string DATA_CONFIG;

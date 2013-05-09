@@ -1,19 +1,23 @@
 #include<iostream>
 #include<cuda.h>
 #include<stdio.h>
+#include<cuda_runtime.h>
+//#include<helpler_functions.h>
+
 #include"util.h"
 #include"SerializedSampleSet.h"
 #include"cuPrintf.cu"
 
-#define BLOCK_SIZE 16
-#define AVERAGE_DATA_PER_SAMPLE 100
+#define BLOCK_SIZE 8 
+#define AVERAGE_DATA_PER_SAMPLE 200
 #define SQUARE(x) (x*x)
 #define THRESHOLD 0.9
 
 using namespace std;
 
 __device__ void print(int value){
-    if(blockIdx.x==0 && blockIdx.y==1 && threadIdx.x==0 && threadIdx.y==15) 
+    //if(blockIdx.x==0 && blockIdx.y==1 && threadIdx.x==0 && threadIdx.y==15) 
+    if(blockIdx.x==0 && threadIdx.x<10)
         printf("block %d,%d, thread %d,%d, value %d\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -313,12 +317,13 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
 }
 
 __global__ void minmaxKernel(float *resultMat,int width,int length,int *resultArray){
-    __shared__ int sharedWidth,sharedLength;
-    if(blockIdx.x==0 && threadIdx.x==0) {
-        sharedWidth=width;
-        sharedLength=length;
-    }
-    __syncthreads();
+    //__shared__ int sharedWidth,sharedLength;
+    int sharedWidth=width,sharedLength=length;
+    //if(blockIdx.x==0 && threadIdx.x==0) {
+    //    sharedWidth=width;
+    //    sharedLength=length;
+    //}
+    //__syncthreads();
     int x=blockIdx.x*blockDim.x+threadIdx.x;
     if(x>=sharedWidth) {
         return;
@@ -333,5 +338,6 @@ __global__ void minmaxKernel(float *resultMat,int width,int length,int *resultAr
     if(min>THRESHOLD) resultArray[x]=1;
     else if (min<-THRESHOLD) resultArray[x]=-1;
     else resultArray[x]=0;
+    //print(resultArray[x]);
     return;
 }

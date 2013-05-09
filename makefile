@@ -25,7 +25,7 @@ SerializedSampleSet.o: SerializedSampleSet.cpp SerializedSampleSet.h
 	$(CPP) $(CFLAGS) -c SerializedSampleSet.cpp -o SerializedSampleSet.o
 
 m3gzc.o: m3gzc.h m3gzc.cu 
-	nvcc -G -Xcompiler -rdynamic -arch=sm_20 -c m3gzc.cu -o m3gzc.o
+	nvcc -g -G -Xcompiler -rdynamic -arch=sm_20 -c m3gzc.cu -o m3gzc.o
 
 #cuPrintf.o: cuPrintf.cuh cuPrintf.cu
 #	nvcc -c cuPrintf.cu -o cuPrintf.o
