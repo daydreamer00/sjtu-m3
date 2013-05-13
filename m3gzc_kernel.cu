@@ -11,13 +11,13 @@
 #define BLOCK_SIZE 8 
 #define AVERAGE_DATA_PER_SAMPLE 200
 #define SQUARE(x) (x*x)
-#define THRESHOLD 0.9
+#define THRESHOLD 0.6
 
 using namespace std;
 
 __device__ void print(int value){
     //if(blockIdx.x==0 && blockIdx.y==1 && threadIdx.x==0 && threadIdx.y==15) 
-    if(blockIdx.x==0 && threadIdx.x<10)
+    //if(blockIdx.x==0 && threadIdx.x<10)
         printf("block %d,%d, thread %d,%d, value %d\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -32,7 +32,7 @@ __device__ void print(int x,int y,char * value){
 }
 
 __device__ void print(float value){
-    if(blockIdx.x==0 && blockIdx.y==1 && threadIdx.x==0 && threadIdx.y==15) 
+    //if(blockIdx.x==0 && blockIdx.y==1 && threadIdx.x==0 && threadIdx.y==15) 
         printf("block %d,%d, thread %d,%d, value %f\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -180,7 +180,7 @@ __device__ void loadToSharedMemory(int ix0,int ix1,int iy0,int iy1,
 }
 
 
-__global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const SerializedSampleSet *sss1,const SerializedSampleSet *sss2,float * resultMat){
+__global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const SerializedSampleSet *sss1,const SerializedSampleSet *sss2,const SerializedSampleSet *sss3,float * resultMat){
     int ix=blockIdx.x*blockDim.x+threadIdx.x;
     int iy=blockIdx.y*blockDim.y+threadIdx.y;
     float x=0,x1=0,x2=0,tmp=0;
@@ -192,131 +192,142 @@ __global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const 
     int xend=sss1->dataNodeOffsetArray[ix];
     int yend=sss2->dataNodeOffsetArray[iy];
 
-    float sum1=0,sum2=0,sum0=0;
-    
-    //print(ix);
-    //print(iy);
-    //print(xbegin);
-    //print(sss1->dataNodeValueArray[xbegin]);
-    //print(ybegin);
-    //print(sss2->dataNodeValueArray[ybegin]);
-    //print(sss2->dataNodeValueArray[ybegin+1]);
-    //print(sss2->dataNodeValueArray[ybegin+2]);
-    sum0=getDistance(&(sss1->dataNodeIndexArray[xbegin]),&(sss1->dataNodeValueArray[xbegin]),xend-xbegin,&(sss2->dataNodeIndexArray[ybegin]),&(sss2->dataNodeValueArray[ybegin]),yend-ybegin);
-    sum1=getDistance(data,*dataLength,&(sss1->dataNodeIndexArray[xbegin]),&(sss1->dataNodeValueArray[xbegin]),xend-xbegin);
-    sum2=getDistance(data,*dataLength,&(sss2->dataNodeIndexArray[ybegin]),&(sss2->dataNodeValueArray[ybegin]),yend-ybegin);
-    //print(sum0);
-    //print(sum1);
-    //print(sum2);
+    int iz=0;
 
-    float theta2=0.25*sum0;
+    while(iz<sss3->numSample){
+        int zbegin=iz>0?sss3->dataNodeOffsetArray[iz-1]:0;
+        int zend=sss3->dataNodeOffsetArray[iz];
 
-    float result=expf(-sum1/theta2)-expf(-sum2/theta2);
+        float sum1=0,sum2=0,sum0=0;
 
-    //print(result);
+        //print(ix);
+        //print(iy);
+        //print(xbegin);
+        //print(sss1->dataNodeValueArray[xbegin]);
+        //print(ybegin);
+        //print(sss2->dataNodeValueArray[ybegin]);
+        //print(sss2->dataNodeValueArray[ybegin+1]);
+        //print(sss2->dataNodeValueArray[ybegin+2]);
+        sum0=getDistance(&(sss1->dataNodeIndexArray[xbegin]),&(sss1->dataNodeValueArray[xbegin]),xend-xbegin,&(sss2->dataNodeIndexArray[ybegin]),&(sss2->dataNodeValueArray[ybegin]),yend-ybegin);
+        sum1=getDistance(&(sss3->dataNodeIndexArray[zbegin]),&(sss3->dataNodeValueArray[zbegin]),zend-zbegin,&(sss1->dataNodeIndexArray[xbegin]),&(sss1->dataNodeValueArray[xbegin]),xend-xbegin);
+        sum2=getDistance(&(sss3->dataNodeIndexArray[zbegin]),&(sss3->dataNodeValueArray[zbegin]),zend-zbegin,&(sss2->dataNodeIndexArray[ybegin]),&(sss2->dataNodeValueArray[ybegin]),yend-ybegin);
+        //sum1=getDistance(data,*dataLength,&(sss1->dataNodeIndexArray[xbegin]),&(sss1->dataNodeValueArray[xbegin]),xend-xbegin);
+        //sum2=getDistance(data,*dataLength,&(sss2->dataNodeIndexArray[ybegin]),&(sss2->dataNodeValueArray[ybegin]),yend-ybegin);
+        //if(ix==24 && iy==0) print(sum0);
+        //if(ix==24 && iy==0) print(sum1);
+        //if(ix==24 && iy==0) print(sum2);
 
-    resultMat[ix*(sss2->numSample)+iy]=result;
+        float theta2=0.25*sum0;
 
-    return;
-}
+        float result=expf(-sum1/theta2)-expf(-sum2/theta2);
+        //if(ix==24) print(result);
 
-__global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * dataLength,const SerializedSampleSet *sss1,const SerializedSampleSet *sss2,float * resultMat){
+        //print(result);
 
-    __shared__ float sum1[BLOCK_SIZE];
-    __shared__ float sum2[BLOCK_SIZE];
-    __shared__ int dataOffsetArray1[BLOCK_SIZE]; 
-    __shared__ int dataOffsetArray2[BLOCK_SIZE]; 
-    __shared__ int dataIndexArray1[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
-    __shared__ int dataIndexArray2[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
-    __shared__ float dataValueArray1[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
-    __shared__ float dataValueArray2[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
-
-    __shared__ int ixBlockBegin,ixBlockEnd,iyBlockBegin,iyBlockEnd;
-    __shared__ int xBlockBegin,xBlockEnd,yBlockBegin,yBlockEnd;
-
-    //__shared__ float dataValueArray3[1200000]; 
-    //dataValueArray3[1199999]=0;
-    
-    if(threadIdx.x==0 && threadIdx.y==0){
-        ixBlockBegin=blockIdx.x*blockDim.x;
-        iyBlockBegin=blockIdx.y*blockDim.y;
-        ixBlockEnd=blockIdx.x<gridDim.x-1?ixBlockBegin+blockDim.x-1:sss1->numSample-1;
-        iyBlockEnd=blockIdx.y<gridDim.y-1?iyBlockBegin+blockDim.y-1:sss2->numSample-1;
-        xBlockBegin=ixBlockBegin>0?sss1->dataNodeOffsetArray[ixBlockBegin-1]:0;
-        yBlockBegin=iyBlockBegin>0?sss2->dataNodeOffsetArray[iyBlockBegin-1]:0;
-        xBlockEnd=sss1->dataNodeOffsetArray[ixBlockEnd];
-        yBlockEnd=sss2->dataNodeOffsetArray[iyBlockEnd];
+        resultMat[iz*(sss1->numSample)*(sss2->numSample)+ix*(sss2->numSample)+iy]=result;
+        iz++;
     }
-    __syncthreads();
-
-    int ix=blockIdx.x*blockDim.x+threadIdx.x;
-    int iy=blockIdx.y*blockDim.y+threadIdx.y;
-    float x=0,x1=0,x2=0,tmp=0;
-
-    //print(yBlockBegin);
-    //print(yBlockEnd);
-    //print(iyBlockEnd);
-
-    loadToSharedMemory(ixBlockBegin,ixBlockEnd,iyBlockBegin,iyBlockEnd,
-            xBlockBegin,xBlockEnd,yBlockBegin,yBlockEnd,
-            ix,iy,sss1,sss2,
-            dataOffsetArray1,dataIndexArray1,dataValueArray1,
-            dataOffsetArray2,dataIndexArray2,dataValueArray2);
-
-    __syncthreads();
-    //for(int i=0;i<BLOCK_SIZE;i++) print(dataIndexArray2[i]);
-
-    if(ix>=sss1->numSample) return;
-    if(iy>=sss2->numSample) return;
-
-    int xbegin=threadIdx.x>0?dataOffsetArray1[threadIdx.x-1]:0;
-    int ybegin=threadIdx.y>0?dataOffsetArray2[threadIdx.y-1]:0;
-    int xend=dataOffsetArray1[threadIdx.x];
-    int yend=dataOffsetArray2[threadIdx.y];
-
-    if(threadIdx.y==0)
-        sum1[threadIdx.x]=getDistance(data,*dataLength,&(dataIndexArray1[xbegin]),&(dataValueArray1[xbegin]),xend-xbegin);
-    if(threadIdx.x==0)
-        sum2[threadIdx.y]=getDistance(data,*dataLength,&(dataIndexArray2[ybegin]),&(dataValueArray2[ybegin]),yend-ybegin);
-
-    __syncthreads();
-
-    float sum0=0;
-    //float sum1=0,sum2=0;
-    
-    //print(ix);
-    //print(iy);
-    //cuPrintf("%d\n",3);
-    //print(xbegin);
-    //print(xend);
-    //print(sss1->dataNodeValueArray[xbegin]);
-    //print(ybegin);
-    //print(yend);
-    //print(sss2->dataNodeValueArray[ybegin]);
-    //print(sss2->dataNodeValueArray[ybegin+1]);
-    //print(sss2->dataNodeValueArray[ybegin+2]);
-    //print(dataValueArray1[xbegin]);
-    //print(dataValueArray2[ybegin]);
-
-    sum0=getDistance(&(dataIndexArray1[xbegin]),&(dataValueArray1[xbegin]),xend-xbegin,&(dataIndexArray2[ybegin]),&(dataValueArray2[ybegin]),yend-ybegin);
-    
-    //print(sum0);
-    //print(sum1);
-    //print(sum2);
-
-    float theta2=0.25*sum0;
-
-    float result;
-    result=expf(-sum1[threadIdx.x]/theta2)-expf(-sum2[threadIdx.y]/theta2);
-
-    //print(result);
-
-    resultMat[ix*(sss2->numSample)+iy]=result;
 
     return;
 }
 
-__global__ void minmaxKernel(float *resultMat,int width,int length,int *resultArray){
+//__global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * dataLength,const SerializedSampleSet *sss1,const SerializedSampleSet *sss2,float * resultMat){
+//
+//    __shared__ float sum1[BLOCK_SIZE];
+//    __shared__ float sum2[BLOCK_SIZE];
+//    __shared__ int dataOffsetArray1[BLOCK_SIZE]; 
+//    __shared__ int dataOffsetArray2[BLOCK_SIZE]; 
+//    __shared__ int dataIndexArray1[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
+//    __shared__ int dataIndexArray2[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
+//    __shared__ float dataValueArray1[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
+//    __shared__ float dataValueArray2[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
+//
+//    __shared__ int ixBlockBegin,ixBlockEnd,iyBlockBegin,iyBlockEnd;
+//    __shared__ int xBlockBegin,xBlockEnd,yBlockBegin,yBlockEnd;
+//
+//    //__shared__ float dataValueArray3[1200000]; 
+//    //dataValueArray3[1199999]=0;
+//    
+//    if(threadIdx.x==0 && threadIdx.y==0){
+//        ixBlockBegin=blockIdx.x*blockDim.x;
+//        iyBlockBegin=blockIdx.y*blockDim.y;
+//        ixBlockEnd=blockIdx.x<gridDim.x-1?ixBlockBegin+blockDim.x-1:sss1->numSample-1;
+//        iyBlockEnd=blockIdx.y<gridDim.y-1?iyBlockBegin+blockDim.y-1:sss2->numSample-1;
+//        xBlockBegin=ixBlockBegin>0?sss1->dataNodeOffsetArray[ixBlockBegin-1]:0;
+//        yBlockBegin=iyBlockBegin>0?sss2->dataNodeOffsetArray[iyBlockBegin-1]:0;
+//        xBlockEnd=sss1->dataNodeOffsetArray[ixBlockEnd];
+//        yBlockEnd=sss2->dataNodeOffsetArray[iyBlockEnd];
+//    }
+//    __syncthreads();
+//
+//    int ix=blockIdx.x*blockDim.x+threadIdx.x;
+//    int iy=blockIdx.y*blockDim.y+threadIdx.y;
+//    float x=0,x1=0,x2=0,tmp=0;
+//
+//    //print(yBlockBegin);
+//    //print(yBlockEnd);
+//    //print(iyBlockEnd);
+//
+//    loadToSharedMemory(ixBlockBegin,ixBlockEnd,iyBlockBegin,iyBlockEnd,
+//            xBlockBegin,xBlockEnd,yBlockBegin,yBlockEnd,
+//            ix,iy,sss1,sss2,
+//            dataOffsetArray1,dataIndexArray1,dataValueArray1,
+//            dataOffsetArray2,dataIndexArray2,dataValueArray2);
+//
+//    __syncthreads();
+//    //for(int i=0;i<BLOCK_SIZE;i++) print(dataIndexArray2[i]);
+//
+//    if(ix>=sss1->numSample) return;
+//    if(iy>=sss2->numSample) return;
+//
+//    int xbegin=threadIdx.x>0?dataOffsetArray1[threadIdx.x-1]:0;
+//    int ybegin=threadIdx.y>0?dataOffsetArray2[threadIdx.y-1]:0;
+//    int xend=dataOffsetArray1[threadIdx.x];
+//    int yend=dataOffsetArray2[threadIdx.y];
+//
+//    if(threadIdx.y==0)
+//        sum1[threadIdx.x]=getDistance(data,*dataLength,&(dataIndexArray1[xbegin]),&(dataValueArray1[xbegin]),xend-xbegin);
+//    if(threadIdx.x==0)
+//        sum2[threadIdx.y]=getDistance(data,*dataLength,&(dataIndexArray2[ybegin]),&(dataValueArray2[ybegin]),yend-ybegin);
+//
+//    __syncthreads();
+//
+//    float sum0=0;
+//    //float sum1=0,sum2=0;
+//    
+//    //print(ix);
+//    //print(iy);
+//    //cuPrintf("%d\n",3);
+//    //print(xbegin);
+//    //print(xend);
+//    //print(sss1->dataNodeValueArray[xbegin]);
+//    //print(ybegin);
+//    //print(yend);
+//    //print(sss2->dataNodeValueArray[ybegin]);
+//    //print(sss2->dataNodeValueArray[ybegin+1]);
+//    //print(sss2->dataNodeValueArray[ybegin+2]);
+//    //print(dataValueArray1[xbegin]);
+//    //print(dataValueArray2[ybegin]);
+//
+//    sum0=getDistance(&(dataIndexArray1[xbegin]),&(dataValueArray1[xbegin]),xend-xbegin,&(dataIndexArray2[ybegin]),&(dataValueArray2[ybegin]),yend-ybegin);
+//    
+//    //print(sum0);
+//    //print(sum1);
+//    //print(sum2);
+//
+//    float theta2=0.25*sum0;
+//
+//    float result;
+//    result=expf(-sum1[threadIdx.x]/theta2)-expf(-sum2[threadIdx.y]/theta2);
+//
+//    //print(result);
+//
+//    resultMat[ix*(sss2->numSample)+iy]=result;
+//
+//    return;
+//}
+
+__global__ void minmaxKernel(float *resultMat,int width,int length,int height,int *resultArray){
     //__shared__ int sharedWidth,sharedLength;
     int sharedWidth=width,sharedLength=length;
     //if(blockIdx.x==0 && threadIdx.x==0) {
@@ -328,16 +339,19 @@ __global__ void minmaxKernel(float *resultMat,int width,int length,int *resultAr
     if(x>=sharedWidth) {
         return;
     }
-    int i=0;
-    float min=1;
-    while(1){
-        if(i==sharedLength) break;
-        if(resultMat[x*sharedLength+i]<min) min=resultMat[x*sharedLength+i];
-        i++;
+
+    for(int z=0;z<height;z++) {
+        int i=0;
+        float min=1;
+        while(1){
+            if(i==sharedLength) break;
+            if(resultMat[z*width*length+x*sharedLength+i]<min) min=resultMat[z*width*length+x*sharedLength+i];
+            i++;
+        }
+        if(min>THRESHOLD) resultArray[z*width+x]=1;
+        else if (min<-THRESHOLD) resultArray[z*width+x]=-1;
+        else resultArray[z*width+x]=0;
     }
-    if(min>THRESHOLD) resultArray[x]=1;
-    else if (min<-THRESHOLD) resultArray[x]=-1;
-    else resultArray[x]=0;
     //print(resultArray[x]);
     return;
 }

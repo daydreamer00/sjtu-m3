@@ -5,9 +5,9 @@
 #include<cmath>
 #include"SerializedSampleSet.h"
 
-int*  m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2);
+int*  m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSampleSet sss3);
 
-int*  m3gzcCPU(SerializedSampleSet sss1,SerializedSampleSet sss2);
+int*  m3gzcCPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSampleSet sss3);
 
 #endif
 

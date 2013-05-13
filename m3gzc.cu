@@ -38,7 +38,7 @@ void reportError(){
     //else printf("success\n");
 }
 
-int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
+int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSampleSet sss3){
     clock_t timer;
     clock_t timer0;
     float time;
@@ -49,8 +49,9 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     cudaEventCreate(&ev0);
     cudaEventCreate(&ev1);
     
-    //sss1.print();
-    //sss2.print();
+    sss1.print();
+    sss2.print();
+    sss3.print();
 
     cudaSetDevice(0);
 
@@ -71,12 +72,12 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     int test_data_length=1;
     int * d_test_data_length;
 
-    int resultSize=sss1.numSample*sss2.numSample;//SerializedSampleSet::max_num_sample*SerializedSampleSet::max_num_sample;
+    int resultSize=sss1.numSample*sss2.numSample*sss3.numSample;//SerializedSampleSet::max_num_sample*SerializedSampleSet::max_num_sample;
     float *resultMat=new float[resultSize];
     float * d_resultMat;
     //int BLOCK_SIZE=16;
 
-    SerializedSampleSet *d_sss1,*d_sss2;
+    SerializedSampleSet *d_sss1,*d_sss2,*d_sss3;
 
     size_t sssSize=sizeof(SerializedSampleSet);
     TIMER_PRINT("pre",timer);
@@ -85,6 +86,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     TIMER_BEGIN(timer);
     cudaMalloc(&d_sss1,sssSize);
     cudaMalloc(&d_sss2,sssSize);
+    cudaMalloc(&d_sss3,sssSize);
     cudaMalloc(&d_resultMat,resultSize*sizeof(float));
     cudaMalloc((void**)&d_test_data,test_data_length*sizeof(Data_Node));
     cudaMalloc(&d_test_data_length,sizeof(int));
@@ -93,6 +95,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     TIMER_BEGIN(timer);
     cudaMemcpy(d_sss1,&sss1,sssSize,cudaMemcpyHostToDevice);
     cudaMemcpy(d_sss2,&sss2,sssSize,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_sss3,&sss3,sssSize,cudaMemcpyHostToDevice);
     cudaMemcpy((void*)d_test_data,test_data,test_data_length*sizeof(Data_Node),cudaMemcpyHostToDevice);
     cudaMemcpy(d_test_data_length,&test_data_length,sizeof(int),cudaMemcpyHostToDevice);
     TIMER_PRINT("mcopy",timer);
@@ -113,7 +116,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     TIMER_PRINT("error check",timer);
 
     TIMER_BEGIN(timer);
-    m3gzcKernel<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_resultMat);
+    m3gzcKernel<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
     //m3gzcKernelWithSharedMemory<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_resultMat);
     TIMER_PRINT("gzc compute",timer);
     TIMER_BEGIN(timer);
@@ -128,7 +131,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     TIMER_PRINT("error check",timer);
 
     TIMER_BEGIN(timer);
-    cudaMemcpy(resultMat,d_resultMat,resultSize*sizeof(float),cudaMemcpyDeviceToHost);
+    //cudaMemcpy(resultMat,d_resultMat,resultSize*sizeof(float),cudaMemcpyDeviceToHost);
 
     TIMER_PRINT("mcopy",timer);
     //for(int i=0;i<resultSize;i++){
@@ -143,9 +146,10 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     //}
 
     TIMER_BEGIN(timer);
-    int *resultArray= new int[sss1.numSample];
+    resultSize=sss1.numSample*sss3.numSample;
+    int *resultArray= new int[resultSize];
     int *d_resultArray;
-    cudaMalloc(&d_resultArray,sss1.numSample*sizeof(int));
+    cudaMalloc(&d_resultArray,resultSize*sizeof(int));
 
     int threadsPerBlock=128;
     int blockPerGrid=(sss1.numSample-1)/threadsPerBlock+1;
@@ -160,7 +164,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     }
     TIMER_PRINT("error check",timer);
     TIMER_BEGIN(timer);
-    minmaxKernel<<<blockPerGrid,threadsPerBlock>>>(d_resultMat,sss1.numSample,sss2.numSample,d_resultArray);
+    minmaxKernel<<<blockPerGrid,threadsPerBlock>>>(d_resultMat,sss1.numSample,sss2.numSample,sss3.numSample,d_resultArray);
     TIMER_PRINT("min kernel",timer);
 
     TIMER_BEGIN(timer);
@@ -175,7 +179,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     TIMER_PRINT("error check",timer);
 
     TIMER_BEGIN(timer);
-    cudaMemcpy(resultArray,d_resultArray,sss1.numSample*sizeof(int),cudaMemcpyDeviceToHost);
+    cudaMemcpy(resultArray,d_resultArray,resultSize*sizeof(int),cudaMemcpyDeviceToHost);
     TIMER_PRINT("post copy",timer);
 
     //cout<<sss1.numSample<<' '<<sss2.numSample<<endl;
@@ -188,6 +192,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
 
     cudaFree(d_sss1);
     cudaFree(d_sss2);
+    cudaFree(d_sss3);
     cudaFree(d_resultMat);
     cudaFree(d_test_data);
     cudaFree(d_test_data_length);
@@ -277,15 +282,16 @@ float getDistance2(const SerializedSampleSet sss1,int i,const SerializedSampleSe
 }
 
 
-int *m3gzcCPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
+int *m3gzcCPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSampleSet sss3){
     //sss1.print();
     //sss2.print();
 
-    float * sumArray1,*sumArray2;
+    float * sumArray0,* sumArray1,*sumArray2;
     int *resultArray;
-    sumArray1=new float[sss1.numSample];
-    sumArray2=new float[sss2.numSample];
-    resultArray=new int[sss1.numSample];
+    sumArray0=new float[sss2.numSample*sss1.numSample];
+    sumArray1=new float[sss3.numSample*sss1.numSample];
+    sumArray2=new float[sss3.numSample*sss2.numSample];
+    resultArray=new int[sss3.numSample*sss1.numSample];
     
     Data_Node * test_data=new Data_Node;
     test_data->index=1;
@@ -297,25 +303,50 @@ int *m3gzcCPU(SerializedSampleSet sss1,SerializedSampleSet sss2){
     test_sample.data_vector_length=1;
     test_sample.data_vector=test_data;
 
-    for(int i=0;i<sss1.numSample;i++) sumArray1[i]=getDistance2(test_sample,sss1,i);
-    cout<<sumArray1[0]<<endl;
-    for(int i=0;i<sss2.numSample;i++) sumArray2[i]=getDistance2(test_sample,sss2,i);
+    //for(int i=0;i<sss1.numSample;i++) sumArray1[i]=getDistance2(test_sample,sss1,i);
+    for(int i=0;i<sss1.numSample;i++) 
+        for(int j=0;j<sss3.numSample;j++)
+            sumArray1[j*sss1.numSample+i]=getDistance2(sss3,j,sss1,i);
+    //cout<<sumArray1[0]<<endl;
+    //for(int i=0;i<sss2.numSample;i++) sumArray2[i]=getDistance2(test_sample,sss2,i);
+    for(int i=0;i<sss2.numSample;i++) 
+        for(int j=0;j<sss3.numSample;j++)
+            sumArray2[j*sss2.numSample+i]=getDistance2(sss3,j,sss2,i);
 
-    for(int i=0;i<sss1.numSample;i++){
-        float min=1;
-        for(int j=0;j<sss2.numSample;j++) {
-            float sum0=getDistance2(sss1,i,sss2,j);
-            //cout<<i<<' '<<j<<' '<<sum0<<endl;
-            float v=exp(-4*sumArray1[i]/sum0)-exp(-4*sumArray2[j]/sum0);
-            //cout<<i<<' '<<j<<' '<<v<<endl;
-            if (v<min) min=v;
+    //for(int i=0;i<sss1.numSample;i++){
+    //    float min=1;
+    //    for(int j=0;j<sss2.numSample;j++) {
+    //        float sum0=getDistance2(sss1,i,sss2,j);
+    //        //cout<<i<<' '<<j<<' '<<sum0<<endl;
+    //        float v=exp(-4*sumArray1[i]/sum0)-exp(-4*sumArray2[j]/sum0);
+    //        //cout<<i<<' '<<j<<' '<<v<<endl;
+    //        if (v<min) min=v;
+    //    }
+
+    //    //cout<<i<<' '<<min<<endl;
+
+    //    if(min>THRESHOLD) resultArray[i]=1;
+    //    else if(min<-THRESHOLD) resultArray[i]=-1;
+    //    else resultArray[i]=0;
+    //}
+
+    for(int i=0;i<sss1.numSample;i++) 
+        for(int j=0;j<sss2.numSample;j++)
+            sumArray0[i*sss2.numSample+j]=getDistance2(sss2,j,sss1,i);
+
+    for(int i=0;i<sss3.numSample;i++){
+        for(int j=0;j<sss1.numSample;j++){
+            float min=1;
+            for(int k=0;k<sss2.numSample;k++){
+                float sum0=sumArray0[j*sss2.numSample+k];
+                float v=exp(-4*sumArray1[i*sss1.numSample+j]/sum0)-exp(-4*sumArray2[i*sss2.numSample+k]/sum0);
+                if(v<min) min=v;
+            }
+
+            if(min>THRESHOLD) resultArray[i*sss1.numSample+j]=1;
+            else if(min<-THRESHOLD) resultArray[i*sss1.numSample+j]=-1;
+            else resultArray[i*sss1.numSample+j]=0;
         }
-
-        //cout<<i<<' '<<min<<endl;
-
-        if(min>THRESHOLD) resultArray[i]=1;
-        else if(min<-THRESHOLD) resultArray[i]=-1;
-        else resultArray[i]=0;
     }
 
     delete test_sample.data_vector;

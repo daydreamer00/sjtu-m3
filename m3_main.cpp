@@ -17,25 +17,26 @@ int main(int argc,char ** argv){
 
     int shardx=0,shardy=0,shardz=0;
 
-    int resultArray[SHARD_SIZE];
+    int resultArray[SHARD_SIZE*TEST_SHARD_SIZE];
     for(int i=0;i<SHARD_SIZE;i++) resultArray[i]=1;
 
     //ofstream fout("out.txt");
     ofstream fout;
     fout.open("out.txt");
     ofstream ftimeout("time.txt");
-    int numSampleArray[2];
-    for(int i=0;i<2;i++) numSampleArray[i]=0;
+    int numSampleArray[3];
+    for(int i=0;i<3;i++) numSampleArray[i]=0;
     clock_t start;
     start=clock();
 
     while(1){
         M3::load_test_data(shardz);
+        numSampleArray[2]+=M3::getSampleNum(2);
 
         while(1){
             clock_t start,end;
 
-            cout<<endl<<"shardx,shardy: "<<shardx<<' '<<shardy<<endl;
+            cout<<endl<<"shardx,shardy,shardz: "<<shardx<<' '<<shardy<<' '<<shardz<<endl;
             ftimeout<<"shardx,shardy: "<<shardx<<' '<<shardy<<endl;
 
             start=clock();
@@ -59,16 +60,28 @@ int main(int argc,char ** argv){
 
             cout<<"offset: "<<M3::getFileOffset(0)<<' '<<M3::getFileOffset(1)<<endl;
 
+            for(int i=0;i<M3::getSampleNum(0)*M3::getSampleNum(2);i++)
+                cout<<i/M3::getSampleNum(0)<<' '<<i%M3::getSampleNum(0)<<' '<<resultArray[i]<<endl;
+
             if(shardy==0) numSampleArray[0]+=M3::getSampleNum(0);
             if(shardx==0) numSampleArray[1]+=M3::getSampleNum(1);
 
             if(M3::getFileOffset(1)==-1) 
-                for(int i=0;i<M3::getSampleNum(0);i++)
-                    fout<<resultArray[i]<<endl;
-            if(M3::getFileOffset(0)==-1 && M3::getFileOffset(1)==-1) break;
+                for(int i=0;i<M3::getSampleNum(0)*M3::getSampleNum(2);i++)
+                    fout<<i/M3::getSampleNum(0)<<' '<<i%M3::getSampleNum(0)<<' '<<resultArray[i]<<endl;
+            if(M3::getFileOffset(0)==-1 && M3::getFileOffset(1)==-1) {
+                for(int i=0;i<TEST_SHARD_SIZE*SHARD_SIZE;i++) {
+                    resultArray[i]=1;
+                    M3::setEnableFlag(i,true);
+                }
+                shardx=shardy=0;
+                M3::setFileOffset(0,0);
+                M3::setFileOffset(1,0);
+                break;
+            }
             shardy++;
             if(M3::getFileOffset(1)==-1) {
-                for(int i=0;i<SHARD_SIZE;i++) {
+                for(int i=0;i<TEST_SHARD_SIZE*SHARD_SIZE;i++) {
                     resultArray[i]=1;
                     M3::setEnableFlag(i,true);
                 }

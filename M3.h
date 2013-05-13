@@ -29,7 +29,7 @@
 /* #include "svm_light.h" */
 
 #define SHARD_SIZE 768 
-#define TEST_SHARD_SIZE 100
+#define TEST_SHARD_SIZE 100 
 
 using namespace std;
 
@@ -262,7 +262,7 @@ namespace M3{
             
             Sample_Link * m_sample_link_head[3],* m_sample_link_tail[3];
             int m_train_data_num[3];
-            bool enableFlagArray[SHARD_SIZE];
+            bool enableFlagArray[SHARD_SIZE*TEST_SHARD_SIZE];
 
             //Sample_Link * m_test_sample_link_head,* m_test_sample_link_tail;
             //int m_test_data_num;

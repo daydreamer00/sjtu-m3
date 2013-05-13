@@ -111,8 +111,6 @@ void M3::parse(){
 }
 
 void M3::initialize(int argc, char * argv[]){
-
-
     Data_Split * data_index=new Data_Split(m3_parameter->classify_data,READ_BUF_SIZE);
     data_index->indexFile();
     delete data_index;
@@ -424,7 +422,7 @@ M3::M3_Master::M3_Master(){
         file_offset[i]=0;
     }
 
-    for(int i=0;i<SHARD_SIZE;i++) enableFlagArray[i]=true;
+    for(int i=0;i<SHARD_SIZE*TEST_SHARD_SIZE;i++) enableFlagArray[i]=true;
     m_memory_enough=true;
 }
 
@@ -2473,33 +2471,39 @@ bool cmp_pruning(const Subset_Info & si_1,
 
 void M3::M3_Master::classify_test_data(int * resultArray){
 
-    SerializedSampleSet sss1(m_sample_link_head[0]),sss2(m_sample_link_head[1]);
+    SerializedSampleSet sss1(m_sample_link_head[0]),sss2(m_sample_link_head[1]),sss3(m_sample_link_head[2]);
 
-    int mapToOriginal[SHARD_SIZE],j=0;
+    int mapToOriginal[TEST_SHARD_SIZE*SHARD_SIZE],k=0;
 
-    for(int i=0;i<sss1.numSample;i++){ 
-        if(getEnableFlag(i)) {
-            mapToOriginal[j]=i;
-            j++;
-        }
-    }
+    //for(int i=0;i<sss3.numSample;i++){ 
+    //    for(int j=0;j<sss1.numSample;j++){ 
+    //        int in=i*sss1.numSample+j;
+    //        if(getEnableFlag(in)) {
+    //            mapToOriginal[i*sss1.numSample+k]=in;
+    //            k++;
+    //        }
+    //    }
+    //}
 
-    SerializedSampleSet sss1Trimmed(m_sample_link_head[0],enableFlagArray);
+    //SerializedSampleSet sss1Trimmed(m_sample_link_head[0],enableFlagArray);
 
     int * resultArrayTrimmed;
 
     clock_t timer;
     TIMER_BEGIN(timer);
-    resultArrayTrimmed=m3gzcGPU(sss1Trimmed,sss2);
-    //resultArrayTrimmed=m3gzcCPU(sss1Trimmed,sss2);
+    resultArrayTrimmed=m3gzcGPU(sss1,sss2,sss3);
+    //resultArrayTrimmed=m3gzcGPU(sss1Trimmed,sss2,sss3);
+    //resultArrayTrimmed=m3gzcCPU(sss1Trimmed,sss2,sss3);
     TIMER_PRINT("Excution",timer);
 
-    for(int i=0;i<sss1Trimmed.numSample;i++) 
-        if(resultArrayTrimmed[i]<resultArray[mapToOriginal[i]])
-            resultArray[mapToOriginal[i]]=resultArrayTrimmed[i];
+    //for(int i=0;i<sss1Trimmed.numSample;i++) 
+    //    if(resultArrayTrimmed[i]<resultArray[mapToOriginal[i]])
+    //        resultArray[mapToOriginal[i]]=resultArrayTrimmed[i];
+    for(int i=0;i<sss1.numSample*sss3.numSample;i++)
+        resultArray[i]=resultArrayTrimmed[i];
 
-    for(int i=0;i<sss1.numSample;i++) 
-        if(resultArray[i]==-1) enableFlagArray[i]=false;
+    //for(int i=0;i<sss1.numSample;i++) 
+    //    if(resultArray[i]==-1) enableFlagArray[i]=false;
 
     //for(int i=0;i<sss1.numSample;i++) 
     //    cout<<resultArray[i]<<' ';
