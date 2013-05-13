@@ -5,6 +5,9 @@
 #include<iostream>
 #include<ctime>
 
+#define SHARD_SIZE 100 
+#define TEST_SHARD_SIZE 100
+
 #define TIMER_BEGIN(t) t=clock()
 #define TIMER_PRINT(msg,t) cout<<msg<<" time: "<<(clock()-t)/(double)CLOCKS_PER_SEC<<endl
 

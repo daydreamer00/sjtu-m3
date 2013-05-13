@@ -117,7 +117,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
 
     TIMER_BEGIN(timer);
     m3gzcKernel<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
-    //m3gzcKernelWithSharedMemory<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_resultMat);
+    //m3gzcKernelWithSharedMemory<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
     TIMER_PRINT("gzc compute",timer);
     TIMER_BEGIN(timer);
     reportError();

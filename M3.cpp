@@ -2492,8 +2492,7 @@ void M3::M3_Master::classify_test_data(int * resultArray){
     clock_t timer;
     TIMER_BEGIN(timer);
     resultArrayTrimmed=m3gzcGPU(sss1,sss2,sss3);
-    //resultArrayTrimmed=m3gzcGPU(sss1Trimmed,sss2,sss3);
-    //resultArrayTrimmed=m3gzcCPU(sss1Trimmed,sss2,sss3);
+    //resultArrayTrimmed=m3gzcCPU(sss1,sss2,sss3);
     TIMER_PRINT("Excution",timer);
 
     //for(int i=0;i<sss1Trimmed.numSample;i++) 

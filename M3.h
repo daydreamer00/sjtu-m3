@@ -28,8 +28,6 @@
 /* #include "libsvm.h" */
 /* #include "svm_light.h" */
 
-#define SHARD_SIZE 768 
-#define TEST_SHARD_SIZE 100 
 
 using namespace std;
 
