@@ -8,10 +8,6 @@
 #include"SerializedSampleSet.h"
 #include"cuPrintf.cu"
 
-#define BLOCK_SIZE 8 
-#define AVERAGE_DATA_PER_SAMPLE 200
-#define SQUARE(x) (x*x)
-#define THRESHOLD 0.6
 
 using namespace std;
 
@@ -243,15 +239,6 @@ __global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const 
 }
 
 __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * dataLength,const SerializedSampleSet *sss1,const SerializedSampleSet *sss2,const SerializedSampleSet * sss3,float * resultMat){
-
-    //__shared__ float sum1[BLOCK_SIZE];
-    //__shared__ float sum2[BLOCK_SIZE];
-    //__shared__ int dataOffsetArray1[BLOCK_SIZE]; 
-    //__shared__ int dataOffsetArray2[BLOCK_SIZE]; 
-    //__shared__ int dataIndexArray1[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
-    //__shared__ int dataIndexArray2[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
-    //__shared__ float dataValueArray1[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
-    //__shared__ float dataValueArray2[BLOCK_SIZE*AVERAGE_DATA_PER_SAMPLE]; 
 
     __shared__ float sum0[BLOCK_SIZE*BLOCK_SIZE]; 
     __shared__ float sum1[BLOCK_SIZE*TEST_SHARD_SIZE]; 

@@ -21,9 +21,14 @@ int main(int argc,char ** argv){
     for(int i=0;i<SHARD_SIZE;i++) resultArray[i]=1;
 
     //ofstream fout("out.txt");
+    char outDirNameArray[100];
+    sprintf(outDirNameArray,"data_%d_%d_%d",SHARD_SIZE,TEST_SHARD_SIZE,BLOCK_SIZE);
+    string outDirNameString(outDirNameArray);
+    system(string("mkdir "+outDirNameString).c_str());
+    outDirNameString+="/";
     ofstream fout;
-    fout.open("out.txt");
-    ofstream ftimeout("time.txt");
+    fout.open(string(outDirNameString+"out.txt").c_str());
+    ofstream ftimeout(string(outDirNameString+"time.txt").c_str());
     int numSampleArray[3];
     for(int i=0;i<3;i++) numSampleArray[i]=0;
     clock_t start;
@@ -37,7 +42,7 @@ int main(int argc,char ** argv){
             clock_t start,end;
 
             cout<<endl<<"shardx,shardy,shardz: "<<shardx<<' '<<shardy<<' '<<shardz<<endl;
-            ftimeout<<"shardx,shardy: "<<shardx<<' '<<shardy<<endl;
+            //ftimeout<<"shardx,shardy: "<<shardx<<' '<<shardy<<endl;
 
             start=clock();
 
@@ -48,7 +53,8 @@ int main(int argc,char ** argv){
                 //M3::training_train_data();
             }
 
-            ftimeout<<"load time: "<<(clock()-start)/(double) CLOCKS_PER_SEC<<endl;
+            //ftimeout<<"load time: "<<(clock()-start)/(double) CLOCKS_PER_SEC<<endl;
+            ftimeout<<(clock()-start)/(double) CLOCKS_PER_SEC<<' ';
 
             start=clock();
 
@@ -56,12 +62,13 @@ int main(int argc,char ** argv){
                 M3::classify_test_data(resultArray);
             }
 
-            ftimeout<<"classify time: "<<(clock()-start)/(double) CLOCKS_PER_SEC<<endl;
+            //ftimeout<<"classify time: "<<(clock()-start)/(double) CLOCKS_PER_SEC<<endl;
+            ftimeout<<(clock()-start)/(double) CLOCKS_PER_SEC<<endl;
 
             cout<<"offset: "<<M3::getFileOffset(0)<<' '<<M3::getFileOffset(1)<<endl;
 
-            for(int i=0;i<M3::getSampleNum(0)*M3::getSampleNum(2);i++)
-                cout<<i/M3::getSampleNum(0)<<' '<<i%M3::getSampleNum(0)<<' '<<resultArray[i]<<endl;
+            //for(int i=0;i<M3::getSampleNum(0)*M3::getSampleNum(2);i++)
+            //    cout<<i/M3::getSampleNum(0)<<' '<<i%M3::getSampleNum(0)<<' '<<resultArray[i]<<endl;
 
             if(shardy==0) numSampleArray[0]+=M3::getSampleNum(0);
             if(shardx==0) numSampleArray[1]+=M3::getSampleNum(1);

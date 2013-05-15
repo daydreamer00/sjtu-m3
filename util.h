@@ -5,11 +5,17 @@
 #include<iostream>
 #include<ctime>
 
-#define SHARD_SIZE 100 
-#define TEST_SHARD_SIZE 100
+#define SHARD_SIZE 32 
+#define TEST_SHARD_SIZE 128 
+#define BLOCK_SIZE 8 
 
 #define TIMER_BEGIN(t) t=clock()
 #define TIMER_PRINT(msg,t) cout<<msg<<" time: "<<(clock()-t)/(double)CLOCKS_PER_SEC<<endl
+
+#define AVERAGE_DATA_PER_SAMPLE 200
+#define SQUARE(x) (x*x)
+#define THRESHOLD 0.6
+
 
 using namespace std;
 

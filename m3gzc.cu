@@ -6,31 +6,6 @@
 
 using namespace std;
 
-bool InitGPUSet()
-{
-    char GPU[100] = "GPU: ";
-    cudaDeviceProp tCard;
-    int num = 0;
-    if(cudaSuccess == cudaGetDeviceCount(&num))
-    {
-        for(int i = 0; i < num; ++ i)
-        {
-            cudaSetDevice(i);
-            cudaGetDeviceProperties(&tCard, i);
-            puts(tCard.name);
-        }
-    }
-    else  return false;
-    return true;
-}
-
-bool cuPrintInit()
-{
-    cudaError_t err = cudaPrintfInit();
-    if(0 != strcmp("no error", cudaGetErrorString(err)))  return false;
-    return true;
-}
-
 void reportError(){
     cudaError_t cudaerr = cudaGetLastError();
     if (cudaerr != CUDA_SUCCESS) 
@@ -49,9 +24,9 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     cudaEventCreate(&ev0);
     cudaEventCreate(&ev1);
     
-    sss1.print();
-    sss2.print();
-    sss3.print();
+    //sss1.print();
+    //sss2.print();
+    //sss3.print();
 
     cudaSetDevice(0);
 
@@ -116,8 +91,8 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     TIMER_PRINT("error check",timer);
 
     TIMER_BEGIN(timer);
-    m3gzcKernel<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
-    //m3gzcKernelWithSharedMemory<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
+    //m3gzcKernel<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
+    m3gzcKernelWithSharedMemory<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
     TIMER_PRINT("gzc compute",timer);
     TIMER_BEGIN(timer);
     reportError();

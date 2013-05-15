@@ -342,7 +342,7 @@ void M3::classify_test_data(int * resultArray){
 }
 
 int M3::getFileOffset(int i){
-    if(i>1) exit(1);
+    if(i>2) exit(1);
     return m3_master->file_offset[i];
 }
 
@@ -891,7 +891,6 @@ void M3::M3_Master::data_unpackage(Data_Sample * sample_buf,
 
 
 void M3::M3_Master::load_train_data_serial_gzc(int shardx,int shardy,string file_name){
- 
     //Data_Split * data_split=new Data_Split(file_name,READ_BUF_SIZE);
     //data_split->split();
     //delete data_split;
@@ -1043,8 +1042,13 @@ int M3::M3_Master::load_subset_data(string file_name,int file_offset,int data_nu
         END_DEBUG;
 
     }
-    if (feof(data_file)) return -1;
-    return ftell(data_file);
+    if (feof(data_file)) {
+        fclose(data_file);
+        return -1;
+    }
+    int new_offset=ftell(data_file);
+    fclose(data_file);
+    return new_offset;
 }
 
 void M3::M3_Master::cleanSubsetData(int i){
