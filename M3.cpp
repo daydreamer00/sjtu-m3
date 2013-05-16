@@ -2503,7 +2503,7 @@ void M3::M3_Master::classify_test_data(int * resultArray){
     //    if(resultArrayTrimmed[i]<resultArray[mapToOriginal[i]])
     //        resultArray[mapToOriginal[i]]=resultArrayTrimmed[i];
     for(int i=0;i<sss1.numSample*sss3.numSample;i++)
-        resultArray[i]=resultArrayTrimmed[i];
+        resultArray[i]=MIN(resultArray[i],resultArrayTrimmed[i]);
 
     //for(int i=0;i<sss1.numSample;i++) 
     //    if(resultArray[i]==-1) enableFlagArray[i]=false;

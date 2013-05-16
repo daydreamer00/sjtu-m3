@@ -18,7 +18,7 @@ int main(int argc,char ** argv){
     int shardx=0,shardy=0,shardz=0;
 
     int resultArray[SHARD_SIZE*TEST_SHARD_SIZE];
-    for(int i=0;i<SHARD_SIZE;i++) resultArray[i]=1;
+    for(int i=0;i<SHARD_SIZE*TEST_SHARD_SIZE;i++) resultArray[i]=1;
 
     //ofstream fout("out.txt");
     char outDirNameArray[100];

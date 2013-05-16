@@ -12,7 +12,7 @@
 using namespace std;
 
 __device__ void print(int value){
-    //if(blockIdx.x==0 && blockIdx.y==1 && threadIdx.x==0 && threadIdx.y==15) 
+    if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==0) 
     //if(blockIdx.x==0 && threadIdx.x<10)
         printf("block %d,%d, thread %d,%d, value %d\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
@@ -28,7 +28,7 @@ __device__ void print(int x,int y,char * value){
 }
 
 __device__ void print(float value){
-    //if(blockIdx.x==0 && blockIdx.y==1 && threadIdx.x==0 && threadIdx.y==15) 
+    if(blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==0 && threadIdx.y==0) 
         printf("block %d,%d, thread %d,%d, value %f\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,value);
 }
 
@@ -58,6 +58,60 @@ __device__ float getDistance(const Data_Node * data,const int dataLength,const i
     return sum;
 }
 
+__device__ float getDistance_alt1(const int * dataNodeIndexArray1,const float * dataNodeValueArray1,const int dataNodeNum1,const int * dataNodeIndexArray2,const float * dataNodeValueArray2,const int dataNodeNum2){
+    float x1=0,x2=0;
+    float sum=0;
+    int loopcount=0;
+    //printf("block %d,%d, thread %d,%d, value %d\n",blockIdx.x,blockIdx.y,threadIdx.x,threadIdx.y,dataNodeValueArray1[0]);
+    //print(dataNodeNum1);
+    //print(dataNodeIndexArray1[0]);
+    //print(dataNodeValueArray1[0]);
+    //print(dataNodeNum2);
+    //print(dataNodeIndexArray2[0]);
+    //print(dataNodeValueArray2[0]);
+    int i=0,j=0;
+    while(1){
+
+        //print(i);
+        //print(j);
+        //print(loopcount);
+        loopcount++; //if(loopcount==3) break;
+        //if (i==dataNodeNum1){ 
+        //    for(;j<dataNodeNum2;j++) sum+=dataNodeValueArray2[j]*dataNodeValueArray2[j];
+        //    break;
+        //}
+        //else if(j==dataNodeNum2) {
+        //    for(;i<dataNodeNum1;i++) sum+=dataNodeValueArray1[i]*dataNodeValueArray1[i];
+        //    break;
+        //}
+        //x1=dataNodeValueArray1[i];
+        //x2=dataNodeValueArray2[j];
+
+        //int i1=-1,i2=-1;
+        //if(i<dataNodeNum1) i1=dataNodeIndexArray1[i];
+        //if(j<dataNodeNum2) i2=dataNodeIndexArray2[j];
+
+        if (i==dataNodeNum1 && j==dataNodeNum2) {break;}
+        else if((i<dataNodeNum1 && j==dataNodeNum2) || (j<dataNodeNum2 && i<dataNodeNum1 && dataNodeIndexArray1[i]<dataNodeIndexArray2[j]))  {
+            x1=dataNodeValueArray1[j];
+            x2=0; 
+            i++;
+        } else if((i==dataNodeNum1 && j<dataNodeNum2) || 
+                (j<dataNodeNum2 && i<dataNodeNum1 && dataNodeIndexArray1[i]>dataNodeIndexArray2[j]) ){
+            x2=dataNodeValueArray2[j];
+            x1=0;
+            j++;
+        } else {
+            x1=dataNodeValueArray1[i];
+            x2=dataNodeValueArray2[j];
+            i++; j++;
+        }
+        float temp=x1-x2;
+        sum+=temp*temp;
+    }
+    //print(sum);
+    return sum;
+}
 __device__ float getDistance(const int * dataNodeIndexArray1,const float * dataNodeValueArray1,const int dataNodeNum1,const int * dataNodeIndexArray2,const float * dataNodeValueArray2,const int dataNodeNum2){
     float x1=0,x2=0;
     float sum=0;
@@ -226,7 +280,7 @@ __global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const 
 
         float theta2=0.25*sum0;
 
-        float result=expf(-sum1/theta2)-expf(-sum2/theta2);
+        float result=__expf(-sum1/theta2)-expf(-sum2/theta2);
         //if(ix==24) print(result);
 
         //print(result);

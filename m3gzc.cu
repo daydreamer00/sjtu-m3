@@ -109,12 +109,8 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     //cudaMemcpy(resultMat,d_resultMat,resultSize*sizeof(float),cudaMemcpyDeviceToHost);
 
     TIMER_PRINT("mcopy",timer);
-    //for(int i=0;i<resultSize;i++){
-    //    if((i)%sss2.numSample==0) cout<<endl;
-    //    cout<<resultMat[i]<<'\t';
-    //}
-    //cout<<endl;
 
+    //cout<<resultMat[0]<<endl;
     //for(int i=0;i<resultSize;i++){
     //    if((i)%sss2.numSample==0 && i>0) cout<<endl;
     //    cout<<resultMat[i]<<'\t';
@@ -162,6 +158,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     //    cout<<i<<' '<<resultArray[i]<<endl;
     //}
     //cout<<endl;
+    //cout<<resultArray[0]<<endl;
 
     TIMER_BEGIN(timer);
 

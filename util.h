@@ -5,15 +5,16 @@
 #include<iostream>
 #include<ctime>
 
-#define SHARD_SIZE 32 
+#define SHARD_SIZE 768 
 #define TEST_SHARD_SIZE 128 
-#define BLOCK_SIZE 8 
+#define BLOCK_SIZE 24 
 
 #define TIMER_BEGIN(t) t=clock()
 #define TIMER_PRINT(msg,t) cout<<msg<<" time: "<<(clock()-t)/(double)CLOCKS_PER_SEC<<endl
 
 #define AVERAGE_DATA_PER_SAMPLE 200
 #define SQUARE(x) (x*x)
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #define THRESHOLD 0.6
 
 
