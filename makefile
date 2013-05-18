@@ -7,6 +7,7 @@ OBJS=m3_main.o M3.o m3_parameter.o data_split.o util.o SerializedSampleSet.o  m3
 CPP=g++#mpic++
 CC=gcc#mpicc
 CFLAGS=-Wall -g 
+NVCCFLAGS= -g -G -O -Xcompiler -rdynamic -arch=sm_20 #-G
 #CFLAGS=-pg
 
 m3train: $(OBJS)
@@ -25,7 +26,7 @@ SerializedSampleSet.o: SerializedSampleSet.cpp SerializedSampleSet.h
 	$(CPP) $(CFLAGS) -c SerializedSampleSet.cpp -o SerializedSampleSet.o
 
 m3gzc.o: m3gzc.h m3gzc.cu 
-	nvcc -g -G -Xcompiler -rdynamic -arch=sm_20 -c m3gzc.cu -o m3gzc.o
+	nvcc $(NVCCFLAGS)  -c m3gzc.cu -o m3gzc.o
 
 #cuPrintf.o: cuPrintf.cuh cuPrintf.cu
 #	nvcc -c cuPrintf.cu -o cuPrintf.o

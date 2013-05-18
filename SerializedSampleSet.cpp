@@ -3,7 +3,8 @@
 using namespace std;
 
 SerializedSampleSet::SerializedSampleSet(Sample_Link * m_sample_link_head){
-    SerializedSampleSet();
+    mallocArray();
+
     Sample_Link * cur_sample_link=m_sample_link_head;
     Data_Sample * cur_sample=NULL;
     Data_Node * cur_data_vector=NULL;
@@ -29,7 +30,8 @@ SerializedSampleSet::SerializedSampleSet(Sample_Link * m_sample_link_head){
 }
 
 SerializedSampleSet::SerializedSampleSet(Sample_Link *m_sample_link_head,bool *enableFlagArray){
-    SerializedSampleSet();
+    mallocArray();
+
     Sample_Link * cur_sample_link=m_sample_link_head;
     Data_Sample * cur_sample=NULL;
     Data_Node * cur_data_vector=NULL;
@@ -60,3 +62,35 @@ SerializedSampleSet::SerializedSampleSet(Sample_Link *m_sample_link_head,bool *e
     numSample=i;
 }
 
+SerializedSampleSet::SerializedSampleSet(){
+    numSample=0;
+    labelArray=NULL;
+    dataNodeOffsetArray=NULL;
+    dataNodeIndexArray=NULL;
+    dataNodeValueArray=NULL;
+} 
+
+SerializedSampleSet::~SerializedSampleSet(){
+}
+
+//SerializedSampleSet::SerializedSampleSet(const SerializedSampleSet &sss){
+//    numSample=sss.numSample;
+//}
+
+void SerializedSampleSet::mallocArray(){
+    labelArray=new float[MAX_NUM_SAMPLE];
+    dataNodeOffsetArray=new int[MAX_NUM_SAMPLE];
+    dataNodeIndexArray=new int[MAX_NUM_SAMPLE*AVERAGE_DATA_PER_SAMPLE];
+    dataNodeValueArray=new float[MAX_NUM_SAMPLE*AVERAGE_DATA_PER_SAMPLE];
+    memset(labelArray,0,sizeof(float)*MAX_NUM_SAMPLE);
+    memset(dataNodeOffsetArray,0,sizeof(int)*MAX_NUM_SAMPLE);
+    memset(dataNodeIndexArray,0,sizeof(int)*MAX_NUM_SAMPLE*AVERAGE_DATA_PER_SAMPLE);
+    memset(dataNodeValueArray,0,sizeof(float)*MAX_NUM_SAMPLE*AVERAGE_DATA_PER_SAMPLE);
+}
+
+void SerializedSampleSet::freeArray(){
+    if(labelArray) delete [] labelArray;
+    if(dataNodeOffsetArray) delete [] dataNodeOffsetArray;
+    if(dataNodeIndexArray) delete [] dataNodeIndexArray;
+    if(dataNodeValueArray) delete [] dataNodeValueArray;
+}

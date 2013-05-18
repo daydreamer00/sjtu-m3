@@ -308,37 +308,37 @@ __device__ void loadToSharedMemory(int ithread,const SerializedSampleSet *sss1,i
 }
 
 
-__global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const SerializedSampleSet *sss1,const SerializedSampleSet *sss2,const SerializedSampleSet *sss3,float * resultMat){
+__global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const SerializedSampleSet sss1,const SerializedSampleSet sss2,const SerializedSampleSet sss3,float * resultMat){
     int ix=blockIdx.x*blockDim.x+threadIdx.x;
     int iy=blockIdx.y*blockDim.y+threadIdx.y;
     float x=0,x1=0,x2=0,tmp=0;
 
-    if(ix>=sss1->numSample) return;
-    if(iy>=sss2->numSample) return;
-    int xbegin=ix>0?sss1->dataNodeOffsetArray[ix-1]:0;
-    int ybegin=iy>0?sss2->dataNodeOffsetArray[iy-1]:0;
-    int xend=sss1->dataNodeOffsetArray[ix];
-    int yend=sss2->dataNodeOffsetArray[iy];
+    if(ix>=sss1.numSample) return;
+    if(iy>=sss2.numSample) return;
+    int xbegin=ix>0?sss1.dataNodeOffsetArray[ix-1]:0;
+    int ybegin=iy>0?sss2.dataNodeOffsetArray[iy-1]:0;
+    int xend=sss1.dataNodeOffsetArray[ix];
+    int yend=sss2.dataNodeOffsetArray[iy];
 
     int iz=0;
 
-    while(iz<sss3->numSample){
-        int zbegin=iz>0?sss3->dataNodeOffsetArray[iz-1]:0;
-        int zend=sss3->dataNodeOffsetArray[iz];
+    while(iz<sss3.numSample){
+        int zbegin=iz>0?sss3.dataNodeOffsetArray[iz-1]:0;
+        int zend=sss3.dataNodeOffsetArray[iz];
 
         float sum1=0,sum2=0,sum0=0;
 
         //print(ix);
         //print(iy);
         //print(xbegin);
-        //print(sss1->dataNodeValueArray[xbegin]);
+        //print(sss1.dataNodeValueArray[xbegin]);
         //print(ybegin);
-        //print(sss2->dataNodeValueArray[ybegin]);
-        //print(sss2->dataNodeValueArray[ybegin+1]);
-        //print(sss2->dataNodeValueArray[ybegin+2]);
-        sum0=getDistance(&(sss1->dataNodeIndexArray[xbegin]),&(sss1->dataNodeValueArray[xbegin]),xend-xbegin,&(sss2->dataNodeIndexArray[ybegin]),&(sss2->dataNodeValueArray[ybegin]),yend-ybegin);
-        sum1=getDistance(&(sss3->dataNodeIndexArray[zbegin]),&(sss3->dataNodeValueArray[zbegin]),zend-zbegin,&(sss1->dataNodeIndexArray[xbegin]),&(sss1->dataNodeValueArray[xbegin]),xend-xbegin);
-        sum2=getDistance(&(sss3->dataNodeIndexArray[zbegin]),&(sss3->dataNodeValueArray[zbegin]),zend-zbegin,&(sss2->dataNodeIndexArray[ybegin]),&(sss2->dataNodeValueArray[ybegin]),yend-ybegin);
+        //print(sss2.dataNodeValueArray[ybegin]);
+        //print(sss2.dataNodeValueArray[ybegin+1]);
+        //print(sss2.dataNodeValueArray[ybegin+2]);
+        sum0=getDistance(&(sss1.dataNodeIndexArray[xbegin]),&(sss1.dataNodeValueArray[xbegin]),xend-xbegin,&(sss2.dataNodeIndexArray[ybegin]),&(sss2.dataNodeValueArray[ybegin]),yend-ybegin);
+        sum1=getDistance(&(sss3.dataNodeIndexArray[zbegin]),&(sss3.dataNodeValueArray[zbegin]),zend-zbegin,&(sss1.dataNodeIndexArray[xbegin]),&(sss1.dataNodeValueArray[xbegin]),xend-xbegin);
+        sum2=getDistance(&(sss3.dataNodeIndexArray[zbegin]),&(sss3.dataNodeValueArray[zbegin]),zend-zbegin,&(sss2.dataNodeIndexArray[ybegin]),&(sss2.dataNodeValueArray[ybegin]),yend-ybegin);
         //sum1=getDistance(data,*dataLength,&(sss1->dataNodeIndexArray[xbegin]),&(sss1->dataNodeValueArray[xbegin]),xend-xbegin);
         //sum2=getDistance(data,*dataLength,&(sss2->dataNodeIndexArray[ybegin]),&(sss2->dataNodeValueArray[ybegin]),yend-ybegin);
         //if(ix==24 && iy==0) print(sum0);
@@ -352,14 +352,14 @@ __global__ void m3gzcKernel(const Data_Node * data,const int * dataLength,const 
 
         //print(result);
 
-        resultMat[iz*(sss1->numSample)*(sss2->numSample)+ix*(sss2->numSample)+iy]=result;
+        resultMat[iz*(sss1.numSample)*(sss2.numSample)+ix*(sss2.numSample)+iy]=result;
         iz++;
     }
 
     return;
 }
 
-__global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * dataLength,const SerializedSampleSet *sss1,const SerializedSampleSet *sss2,const SerializedSampleSet * sss3,float * resultMat){
+__global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * dataLength,const SerializedSampleSet sss1,const SerializedSampleSet sss2,const SerializedSampleSet sss3,float * resultMat){
 
     __shared__ float sum0[BLOCK_SIZE*BLOCK_SIZE]; 
     __shared__ float sum1[BLOCK_SIZE*TEST_SHARD_SIZE]; 
@@ -377,15 +377,15 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
         iBlockBegin[0]=blockIdx.x*blockDim.x;
         iBlockBegin[1]=blockIdx.y*blockDim.y;
         iBlockBegin[2]=0;
-        iBlockEnd[0]=blockIdx.x<gridDim.x-1?iBlockBegin[0]+blockDim.x-1:sss1->numSample-1;
-        iBlockEnd[1]=blockIdx.y<gridDim.y-1?iBlockBegin[1]+blockDim.y-1:sss2->numSample-1;
-        iBlockEnd[2]=sss3->numSample-1;
-        idataBlockBegin[0]=iBlockBegin[0]>0?sss1->dataNodeOffsetArray[iBlockBegin[0]-1]:0;
-        idataBlockBegin[1]=iBlockBegin[1]>0?sss2->dataNodeOffsetArray[iBlockBegin[1]-1]:0;
+        iBlockEnd[0]=blockIdx.x<gridDim.x-1?iBlockBegin[0]+blockDim.x-1:sss1.numSample-1;
+        iBlockEnd[1]=blockIdx.y<gridDim.y-1?iBlockBegin[1]+blockDim.y-1:sss2.numSample-1;
+        iBlockEnd[2]=sss3.numSample-1;
+        idataBlockBegin[0]=iBlockBegin[0]>0?sss1.dataNodeOffsetArray[iBlockBegin[0]-1]:0;
+        idataBlockBegin[1]=iBlockBegin[1]>0?sss2.dataNodeOffsetArray[iBlockBegin[1]-1]:0;
         idataBlockBegin[2]=0;
-        idataBlockEnd[0]=sss1->dataNodeOffsetArray[iBlockEnd[0]]-1;
-        idataBlockEnd[1]=sss2->dataNodeOffsetArray[iBlockEnd[1]]-1;
-        idataBlockEnd[2]=sss2->dataNodeOffsetArray[iBlockEnd[2]]-1;
+        idataBlockEnd[0]=sss1.dataNodeOffsetArray[iBlockEnd[0]]-1;
+        idataBlockEnd[1]=sss2.dataNodeOffsetArray[iBlockEnd[1]]-1;
+        idataBlockEnd[2]=sss2.dataNodeOffsetArray[iBlockEnd[2]]-1;
 
         //ixBlockBegin=blockIdx.x*blockDim.x;
         //iyBlockBegin=blockIdx.y*blockDim.y;
@@ -407,9 +407,9 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     //print(yBlockEnd);
     //print(iyBlockEnd);
 
-    loadToSharedMemory(ithread,sss1,iBlockBegin[0],iBlockEnd[0],idataBlockBegin[0],idataBlockEnd[0],sss2,iBlockBegin[1],iBlockEnd[1],idataBlockBegin[1],idataBlockEnd[1],sum0);
-    loadToSharedMemory(ithread,sss3,iBlockBegin[2],iBlockEnd[2],idataBlockBegin[2],idataBlockEnd[2],sss1,iBlockBegin[0],iBlockEnd[0],idataBlockBegin[0],idataBlockEnd[0],sum1);
-    loadToSharedMemory(ithread,sss3,iBlockBegin[2],iBlockEnd[2],idataBlockBegin[2],idataBlockEnd[2],sss2,iBlockBegin[1],iBlockEnd[1],idataBlockBegin[1],idataBlockEnd[1],sum2);
+    loadToSharedMemory(ithread,&sss1,iBlockBegin[0],iBlockEnd[0],idataBlockBegin[0],idataBlockEnd[0],&sss2,iBlockBegin[1],iBlockEnd[1],idataBlockBegin[1],idataBlockEnd[1],sum0);
+    loadToSharedMemory(ithread,&sss3,iBlockBegin[2],iBlockEnd[2],idataBlockBegin[2],idataBlockEnd[2],&sss1,iBlockBegin[0],iBlockEnd[0],idataBlockBegin[0],idataBlockEnd[0],sum1);
+    loadToSharedMemory(ithread,&sss3,iBlockBegin[2],iBlockEnd[2],idataBlockBegin[2],idataBlockEnd[2],&sss2,iBlockBegin[1],iBlockEnd[1],idataBlockBegin[1],idataBlockEnd[1],sum2);
 
     //        ixBlockBegin,ixBlockEnd,iyBlockBegin,iyBlockEnd,
     //        xBlockBegin,xBlockEnd,yBlockBegin,yBlockEnd,
@@ -420,12 +420,12 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
     __syncthreads();
     //for(int i=0;i<BLOCK_SIZE;i++) print(dataIndexArray2[i]);
 
-    if(ix>=sss1->numSample) return;
-    if(iy>=sss2->numSample) return;
+    if(ix>=sss1.numSample) return;
+    if(iy>=sss2.numSample) return;
 
     int iz=0;
 
-    while(iz<sss3->numSample){
+    while(iz<sss3.numSample){
         //int zbegin=iz>0?sss3->dataNodeOffsetArray[iz-1]:0;
         //int zend=sss3->dataNodeOffsetArray[iz];
 
@@ -450,7 +450,7 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
 
         //print(result);
 
-        resultMat[iz*(sss1->numSample)*(sss2->numSample)+ix*(sss2->numSample)+iy]=result;
+        resultMat[iz*(sss1.numSample)*(sss2.numSample)+ix*(sss2.numSample)+iy]=result;
         iz++;
     }
 

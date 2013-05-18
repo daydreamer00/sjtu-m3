@@ -4,15 +4,17 @@
 #include<string>
 #include<iostream>
 #include<ctime>
+#include<string.h>
+//#include<cutil.h>
 
-#define SHARD_SIZE 768 
+#define SHARD_SIZE 1024 
 #define TEST_SHARD_SIZE 128 
-#define BLOCK_SIZE 24 
+#define BLOCK_SIZE 16 
 
 #define TIMER_BEGIN(t) t=clock()
 #define TIMER_PRINT(msg,t) cout<<msg<<" time: "<<(clock()-t)/(double)CLOCKS_PER_SEC<<endl
 
-#define AVERAGE_DATA_PER_SAMPLE 200
+#define AVERAGE_DATA_PER_SAMPLE 100
 #define SQUARE(x) (x*x)
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 #define THRESHOLD 0.6

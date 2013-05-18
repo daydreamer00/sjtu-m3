@@ -2513,6 +2513,9 @@ void M3::M3_Master::classify_test_data(int * resultArray){
     //cout<<endl;
 
     delete[] resultArrayTrimmed;
+    sss1.freeArray();
+    sss2.freeArray();
+    sss3.freeArray();
 
         //for (int i=1;i<=m3_parameter->running_process_num;i++)
     //    MPI_Send(&M3::testLen,

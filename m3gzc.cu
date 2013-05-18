@@ -8,8 +8,10 @@ using namespace std;
 
 void reportError(){
     cudaError_t cudaerr = cudaGetLastError();
-    if (cudaerr != CUDA_SUCCESS) 
+    if (cudaerr != CUDA_SUCCESS) {
         printf("error \"%s\".\n", cudaGetErrorString(cudaerr));
+        exit(1);
+    }
     //else printf("success\n");
 }
 
@@ -52,27 +54,44 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     float * d_resultMat;
     //int BLOCK_SIZE=16;
 
-    SerializedSampleSet *d_sss1,*d_sss2,*d_sss3;
+    SerializedSampleSet d_sss1,d_sss2,d_sss3;
+    SerializedSampleSet *h_ssspArray[3],d_sssArray[3];
+    h_ssspArray[0]=&sss1;
+    h_ssspArray[1]=&sss2;
+    h_ssspArray[2]=&sss3;
 
     size_t sssSize=sizeof(SerializedSampleSet);
     TIMER_PRINT("pre",timer);
 
-
     TIMER_BEGIN(timer);
-    cudaMalloc(&d_sss1,sssSize);
-    cudaMalloc(&d_sss2,sssSize);
-    cudaMalloc(&d_sss3,sssSize);
+    
+    for(int i=0;i<3;i++){
+        d_sssArray[i].numSample=h_ssspArray[i]->numSample;
+        cudaMalloc(&(d_sssArray[i].labelArray),sizeof(float)*MAX_NUM_SAMPLE);
+        cudaMalloc(&(d_sssArray[i].dataNodeOffsetArray),sizeof(int)*MAX_NUM_SAMPLE);
+        cudaMalloc(&(d_sssArray[i].dataNodeIndexArray),sizeof(int)*MAX_NUM_SAMPLE*AVERAGE_DATA_PER_SAMPLE);
+        cudaMalloc(&(d_sssArray[i].dataNodeValueArray),sizeof(float)*MAX_NUM_SAMPLE*AVERAGE_DATA_PER_SAMPLE);
+        cudaMemcpy(d_sssArray[i].labelArray,h_ssspArray[i]->labelArray,sizeof(float)*MAX_NUM_SAMPLE,cudaMemcpyHostToDevice);
+        cudaMemcpy(d_sssArray[i].dataNodeOffsetArray,h_ssspArray[i]->dataNodeOffsetArray,sizeof(int)*MAX_NUM_SAMPLE,cudaMemcpyHostToDevice);
+        cudaMemcpy(d_sssArray[i].dataNodeIndexArray,h_ssspArray[i]->dataNodeIndexArray,sizeof(int)*MAX_NUM_SAMPLE*AVERAGE_DATA_PER_SAMPLE,cudaMemcpyHostToDevice);
+        cudaMemcpy(d_sssArray[i].dataNodeValueArray,h_ssspArray[i]->dataNodeValueArray,sizeof(float)*MAX_NUM_SAMPLE*AVERAGE_DATA_PER_SAMPLE,cudaMemcpyHostToDevice);
+    }
+
+    //cudaMalloc(&d_sss1,sssSize);
+    //cudaMalloc(&d_sss2,sssSize);
+    //cudaMalloc(&d_sss3,sssSize);
     cudaMalloc(&d_resultMat,resultSize*sizeof(float));
     cudaMalloc((void**)&d_test_data,test_data_length*sizeof(Data_Node));
     cudaMalloc(&d_test_data_length,sizeof(int));
+
     TIMER_PRINT("malloc",timer);
 
     TIMER_BEGIN(timer);
-    cudaMemcpy(d_sss1,&sss1,sssSize,cudaMemcpyHostToDevice);
-    cudaMemcpy(d_sss2,&sss2,sssSize,cudaMemcpyHostToDevice);
-    cudaMemcpy(d_sss3,&sss3,sssSize,cudaMemcpyHostToDevice);
-    cudaMemcpy((void*)d_test_data,test_data,test_data_length*sizeof(Data_Node),cudaMemcpyHostToDevice);
-    cudaMemcpy(d_test_data_length,&test_data_length,sizeof(int),cudaMemcpyHostToDevice);
+    //cudaMemcpy(d_sss1,&sss1,sssSize,cudaMemcpyHostToDevice);
+    //cudaMemcpy(d_sss2,&sss2,sssSize,cudaMemcpyHostToDevice);
+    //cudaMemcpy(d_sss3,&sss3,sssSize,cudaMemcpyHostToDevice);
+    //cudaMemcpy((void*)d_test_data,test_data,test_data_length*sizeof(Data_Node),cudaMemcpyHostToDevice);
+    //cudaMemcpy(d_test_data_length,&test_data_length,sizeof(int),cudaMemcpyHostToDevice);
     TIMER_PRINT("mcopy",timer);
 
     TIMER_BEGIN(timer);
@@ -92,7 +111,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
 
     TIMER_BEGIN(timer);
     //m3gzcKernel<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
-    m3gzcKernelWithSharedMemory<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
+    m3gzcKernelWithSharedMemory<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sssArray[0],d_sssArray[1],d_sssArray[2],d_resultMat);
     TIMER_PRINT("gzc compute",timer);
     TIMER_BEGIN(timer);
     reportError();
@@ -161,10 +180,17 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     //cout<<resultArray[0]<<endl;
 
     TIMER_BEGIN(timer);
+    
+    for(int i=0;i<3;i++){
+        cudaFree(d_sssArray[i].labelArray);
+        cudaFree(d_sssArray[i].dataNodeOffsetArray);
+        cudaFree(d_sssArray[i].dataNodeIndexArray);
+        cudaFree(d_sssArray[i].dataNodeValueArray);
+    }
 
-    cudaFree(d_sss1);
-    cudaFree(d_sss2);
-    cudaFree(d_sss3);
+    //cudaFree(d_sss1);
+    //cudaFree(d_sss2);
+    //cudaFree(d_sss3);
     cudaFree(d_resultMat);
     cudaFree(d_test_data);
     cudaFree(d_test_data_length);
