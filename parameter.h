@@ -21,6 +21,8 @@ class M3_Parameter{
 
   void rm_parse_as_cmd(int ** argc,char *** argv); /* remove the pointer */
 
+  string getTrainData();
+
   int running_process_num;      /* m3_start_slave_process_rank='this'+1 
 				 * how many process be used to 
 				 * be running but not store data
@@ -78,6 +80,7 @@ class M3_Parameter{
 				 * 2--both
 				 */
 
+  int m3_version;	// 0--CPU, 1--GPU
 };
 
 class Classifier_Parameter//added by hoss

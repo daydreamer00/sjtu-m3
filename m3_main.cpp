@@ -22,7 +22,10 @@ int main(int argc,char ** argv){
 
     //ofstream fout("out.txt");
     char outDirNameArray[100];
-    sprintf(outDirNameArray,"data_%d_%d_%d",SHARD_SIZE,TEST_SHARD_SIZE,BLOCK_SIZE);
+    string fileName=M3::getTrainData();
+    size_t pos=fileName.find("train");
+    fileName=fileName.substr(0,pos);
+    sprintf(outDirNameArray,"%s_%d_%d_%d_%d",fileName.c_str(),SHARD_SIZE,TEST_SHARD_SIZE,BLOCK_SIZE,M3::getVersion());
     string outDirNameString(outDirNameArray);
     system(string("mkdir "+outDirNameString).c_str());
     outDirNameString+="/";
@@ -65,7 +68,7 @@ int main(int argc,char ** argv){
             //ftimeout<<"classify time: "<<(clock()-start)/(double) CLOCKS_PER_SEC<<endl;
             ftimeout<<(clock()-start)/(double) CLOCKS_PER_SEC<<endl;
 
-            cout<<"offset: "<<M3::getFileOffset(0)<<' '<<M3::getFileOffset(1)<<endl;
+            cout<<"offset: "<<M3::getFileOffset(0)<<' '<<M3::getFileOffset(1)<<' '<<M3::getFileOffset(2)<<endl;
 
             //for(int i=0;i<M3::getSampleNum(0)*M3::getSampleNum(2);i++)
             //    cout<<i/M3::getSampleNum(0)<<' '<<i%M3::getSampleNum(0)<<' '<<resultArray[i]<<endl;

@@ -7,9 +7,9 @@
 #include<string.h>
 //#include<cutil.h>
 
-#define SHARD_SIZE 1024 
+#define SHARD_SIZE 2048 
 #define TEST_SHARD_SIZE 128 
-#define BLOCK_SIZE 16 
+#define BLOCK_SIZE 32 
 
 #define TIMER_BEGIN(t) t=clock()
 #define TIMER_PRINT(msg,t) cout<<msg<<" time: "<<(clock()-t)/(double)CLOCKS_PER_SEC<<endl

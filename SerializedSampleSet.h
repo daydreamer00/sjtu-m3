@@ -3,7 +3,7 @@
 
 #include<iostream>
 #include"util.h"
-#define MAX_NUM_SAMPLE 2000
+#define MAX_NUM_SAMPLE 4000
 //#define MAX_NUM_DATA 100000
 
 using namespace std;

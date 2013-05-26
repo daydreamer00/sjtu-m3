@@ -143,6 +143,9 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
 
     int threadsPerBlock=128;
     int blockPerGrid=(sss1.numSample-1)/threadsPerBlock+1;
+
+    dimBlock=dim3(BLOCK_SIZE,BLOCK_SIZE);
+    dimGrid=dim3((sss1.numSample-1)/BLOCK_SIZE+1,(sss3.numSample-1)/BLOCK_SIZE+1);
     TIMER_PRINT("malloc",timer);
 
     TIMER_BEGIN(timer);
@@ -154,7 +157,8 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     }
     TIMER_PRINT("error check",timer);
     TIMER_BEGIN(timer);
-    minmaxKernel<<<blockPerGrid,threadsPerBlock>>>(d_resultMat,sss1.numSample,sss2.numSample,sss3.numSample,d_resultArray);
+    //minmaxKernel<<<blockPerGrid,threadsPerBlock>>>(d_resultMat,sss1.numSample,sss2.numSample,sss3.numSample,d_resultArray);
+    minmaxKernelImproved<<<dimGrid,dimBlock>>>(d_resultMat,sss1.numSample,sss2.numSample,sss3.numSample,d_resultArray);
     TIMER_PRINT("min kernel",timer);
 
     TIMER_BEGIN(timer);
@@ -210,6 +214,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
 
     TIMER_PRINT("post compute",timer);
     TIMER_PRINT("total compute time",timer0);
+    delete [] resultMat;
     return resultArray;
 }
 
@@ -339,6 +344,7 @@ int *m3gzcCPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
                 float sum0=sumArray0[j*sss2.numSample+k];
                 float v=exp(-4*sumArray1[i*sss1.numSample+j]/sum0)-exp(-4*sumArray2[i*sss2.numSample+k]/sum0);
                 if(v<min) min=v;
+                //if(v<-THRESHOLD) break;
             }
 
             if(min>THRESHOLD) resultArray[i*sss1.numSample+j]=1;

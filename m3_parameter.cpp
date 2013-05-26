@@ -30,6 +30,7 @@ void M3_Parameter::init(string pfile_name){
 	m3_pruning_mode=0;
 	m3_pruning_speed_mode=0;
 	m3_pruning_combine_score=0;
+    m3_version=0;
 
 	ifstream config(pfile_name.c_str());
 	string tmp;
@@ -97,6 +98,8 @@ void M3_Parameter::init(string pfile_name){
 			m3_pruning_speed_mode=1;
 			m3_pruning_combine_score=atoi(rr.c_str());
 		}
+		if (ll=="version") 
+            m3_version=atoi(rr.c_str());
 	}
 
 	config.close();
@@ -132,5 +135,6 @@ void M3_Parameter::rm_parse_as_cmd(int ** argc,char *** argv){
 	delete [] (*argv);
 	delete (*argc);
 }
+
 
 #endif

@@ -400,7 +400,7 @@ __global__ void m3gzcKernelWithSharedMemory(const Data_Node * data,const int * d
 
     int ix=blockIdx.x*blockDim.x+threadIdx.x;
     int iy=blockIdx.y*blockDim.y+threadIdx.y;
-    float x=0,x1=0,x2=0,tmp=0;
+    float x=0;//,x1=0,x2=0,tmp=0;
     int ithread=threadIdx.x*blockDim.y+threadIdx.y;
 
     //print(yBlockBegin);
@@ -517,15 +517,40 @@ __global__ void minmaxKernel(float *resultMat,int width,int length,int height,in
     for(int z=0;z<height;z++) {
         int i=0;
         float min=1;
-        while(1){
-            if(i==sharedLength) break;
-            if(resultMat[z*width*length+x*sharedLength+i]<min) min=resultMat[z*width*length+x*sharedLength+i];
-            i++;
+        for(int i=0;i<sharedLength;i++){
+        //while(1){
+            //if(i==sharedLength) break;
+            float tmpValue=resultMat[z*width*length+x*sharedLength+i];
+            if(tmpValue<min) min=tmpValue;
+            //i++;
+            //if(min<-THRESHOLD) break;
+        //}
         }
         if(min>THRESHOLD) resultArray[z*width+x]=1;
         else if (min<-THRESHOLD) resultArray[z*width+x]=-1;
         else resultArray[z*width+x]=0;
     }
     //print(resultArray[x]);
+    return;
+}
+
+__global__ void minmaxKernelImproved(float *resultMat,int width,int length,int height,int *resultArray){
+    int x=blockIdx.x*blockDim.x+threadIdx.x;
+    int z=blockIdx.y*blockDim.y+threadIdx.y;
+    if(x>=width) return;
+    if(z>=height) return;
+    float min=1;
+    for(int i=0;i<length;i++){
+        //while(1){
+        //if(i==sharedLength) break;
+        float tmpValue=resultMat[z*width*length+x*length+i];
+        if(tmpValue<min) min=tmpValue;
+        //i++;
+        //if(min<-THRESHOLD) break;
+        //}
+    }
+    if(min>THRESHOLD) resultArray[z*width+x]=1;
+    else if (min<-THRESHOLD) resultArray[z*width+x]=-1;
+    else resultArray[z*width+x]=0;
     return;
 }

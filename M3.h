@@ -914,6 +914,11 @@ namespace M3{
     const string RESULT_COMPARE="result_compare";
     const string RESULT_MATRIX="result.matrix";
     const string RESULT_CONFIDENT="result.confident";
+
+
+    std::string getTrainData();
+    int getVersion();
+    
 };
 
 #endif

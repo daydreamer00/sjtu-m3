@@ -6,8 +6,9 @@
 OBJS=m3_main.o M3.o m3_parameter.o data_split.o util.o SerializedSampleSet.o  m3gzc.o #cuPrintf.o #m3gzcKernel.o
 CPP=g++#mpic++
 CC=gcc#mpicc
-CFLAGS=-Wall -g 
-NVCCFLAGS= -g -G -O -Xcompiler -rdynamic -arch=sm_20 #-G
+CFLAGS=-Wall -g
+#NVCCFLAGS=-g -O -Xcompiler -rdynamic -lineinfo -arch=sm_20 #debug version
+NVCCFLAGS= -O -arch=sm_20 
 #CFLAGS=-pg
 
 m3train: $(OBJS)

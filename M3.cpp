@@ -363,6 +363,14 @@ int M3::getSampleNum(int i){
     return m3_master->getSampleNum(i);
 }
 
+std::string M3::getTrainData(){
+    return m3_parameter->train_data;
+}
+
+int M3::getVersion(){
+    return m3_parameter->m3_version;
+}
+
 //void M3::score_test_data(){
 //    if (rank_master(m3_my_rank))
 //        m3_master->score_test_data();
@@ -433,7 +441,7 @@ M3::M3_Master::~M3_Master(){
         for (sl=m_sample_link_head[i];sl!=NULL;){
             Data_Sample * ds=sl->sample_head;
             delete [] (ds[0].data_vector);
-            delete [] ds;
+            delete  ds;
             sl_tmp=sl;
             sl=sl->next;
             delete sl_tmp;
@@ -1044,10 +1052,12 @@ int M3::M3_Master::load_subset_data(string file_name,int file_offset,int data_nu
     }
     if (feof(data_file)) {
         fclose(data_file);
+        delete [] read_buf;
         return -1;
     }
     int new_offset=ftell(data_file);
     fclose(data_file);
+    delete [] read_buf;
     return new_offset;
 }
 
@@ -1056,7 +1066,7 @@ void M3::M3_Master::cleanSubsetData(int i){
     for (sl=m_sample_link_head[i];sl!=NULL;){
         Data_Sample * ds=sl->sample_head;
         delete [] (ds[0].data_vector);
-        delete [] ds;
+        delete ds;
         sl_tmp=sl;
         sl=sl->next;
         delete sl_tmp;
@@ -2495,8 +2505,13 @@ void M3::M3_Master::classify_test_data(int * resultArray){
 
     clock_t timer;
     TIMER_BEGIN(timer);
-    resultArrayTrimmed=m3gzcGPU(sss1,sss2,sss3);
-    //resultArrayTrimmed=m3gzcCPU(sss1,sss2,sss3);
+    if(m3_parameter->m3_version==1){
+        printf("GPU version\n");
+        resultArrayTrimmed=m3gzcGPU(sss1,sss2,sss3);
+    } else if (m3_parameter->m3_version==0){
+        printf("CPU version\n");
+        resultArrayTrimmed=m3gzcCPU(sss1,sss2,sss3);
+    }
     TIMER_PRINT("Excution",timer);
 
     //for(int i=0;i<sss1Trimmed.numSample;i++) 
