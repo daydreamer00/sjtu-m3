@@ -2511,6 +2511,10 @@ void M3::M3_Master::classify_test_data(int * resultArray){
     } else if (m3_parameter->m3_version==0){
         printf("CPU version\n");
         resultArrayTrimmed=m3gzcCPU(sss1,sss2,sss3);
+        //resultArrayTrimmed=m3gzcCPUOriginal(sss1,sss2,sss3);
+    } else if (m3_parameter->m3_version==2){
+        printf("CPU version 2\n");
+        resultArrayTrimmed=m3gzcCPUOriginal(sss1,sss2,sss3);
     }
     TIMER_PRINT("Excution",timer);
 

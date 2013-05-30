@@ -3,6 +3,8 @@
 #include<cuda.h>
 #include<stdio.h>
 #include<iostream>
+#include<fstream>
+#include<string>
 
 using namespace std;
 
@@ -15,16 +17,28 @@ void reportError(){
     //else printf("success\n");
 }
 
+void recordTime(cudaEvent_t &evtBegin,cudaEvent_t &evtEnd,string message){
+    cudaEventRecord(evtEnd,0);
+    float time;
+    cudaEventSynchronize(evtBegin);
+    cudaEventSynchronize(evtEnd);
+    cudaEventElapsedTime(&time,evtBegin,evtEnd);
+    fbreakdown<<message<<'\t'<<time<<endl;
+    cudaEventRecord(evtBegin,0);
+}
+
 int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSampleSet sss3){
     clock_t timer;
     clock_t timer0;
     float time;
     TIMER_BEGIN(timer);
     TIMER_BEGIN(timer0);
-    cudaEvent_t ev0,ev1;
+    cudaEvent_t ev0,ev1,ev2,ev3;
 
     cudaEventCreate(&ev0);
     cudaEventCreate(&ev1);
+    cudaEventCreate(&ev2);
+    cudaEventCreate(&ev3);
     
     //sss1.print();
     //sss2.print();
@@ -33,6 +47,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     cudaSetDevice(0);
 
     cudaEventRecord(ev0,0);
+    cudaEventRecord(ev2,0);
 
     cudaError_t cudaerr;
     int attr=0;
@@ -62,6 +77,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
 
     size_t sssSize=sizeof(SerializedSampleSet);
     TIMER_PRINT("pre",timer);
+    recordTime(ev2,ev3,"preprocessing 1");
 
     TIMER_BEGIN(timer);
     
@@ -84,6 +100,7 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     cudaMalloc((void**)&d_test_data,test_data_length*sizeof(Data_Node));
     cudaMalloc(&d_test_data_length,sizeof(int));
 
+    recordTime(ev2,ev3,"Mem alloc and copy");
     TIMER_PRINT("malloc",timer);
 
     TIMER_BEGIN(timer);
@@ -110,8 +127,10 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     TIMER_PRINT("error check",timer);
 
     TIMER_BEGIN(timer);
-    //m3gzcKernel<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
-    m3gzcKernelWithSharedMemory<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sssArray[0],d_sssArray[1],d_sssArray[2],d_resultMat);
+    m3gzcKernel<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sss1,d_sss2,d_sss3,d_resultMat);
+    //m3gzcKernelWithSharedMemory<<<dimGrid,dimBlock>>>(d_test_data,d_test_data_length,d_sssArray[0],d_sssArray[1],d_sssArray[2],d_resultMat);
+
+    recordTime(ev2,ev3,"GZC computing(kernel 1)");
     TIMER_PRINT("gzc compute",timer);
     TIMER_BEGIN(timer);
     reportError();
@@ -157,8 +176,10 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     }
     TIMER_PRINT("error check",timer);
     TIMER_BEGIN(timer);
+    recordTime(ev2,ev3,"preprocessing 2");
     //minmaxKernel<<<blockPerGrid,threadsPerBlock>>>(d_resultMat,sss1.numSample,sss2.numSample,sss3.numSample,d_resultArray);
     minmaxKernelImproved<<<dimGrid,dimBlock>>>(d_resultMat,sss1.numSample,sss2.numSample,sss3.numSample,d_resultArray);
+    recordTime(ev2,ev3,"min computing (kernel 2)");
     TIMER_PRINT("min kernel",timer);
 
     TIMER_BEGIN(timer);
@@ -202,6 +223,8 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
 
     delete test_data;
 
+    recordTime(ev2,ev3,"postprocessing");
+    
     cudaEventRecord(ev1,0);
     cudaEventSynchronize(ev0);
     cudaEventSynchronize(ev1);
@@ -211,6 +234,8 @@ int *m3gzcGPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
 
     cudaEventDestroy(ev0);
     cudaEventDestroy(ev1);
+    cudaEventDestroy(ev2);
+    cudaEventDestroy(ev3);
 
     TIMER_PRINT("post compute",timer);
     TIMER_PRINT("total compute time",timer0);
@@ -316,23 +341,7 @@ int *m3gzcCPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
         for(int j=0;j<sss3.numSample;j++)
             sumArray2[j*sss2.numSample+i]=getDistance2(sss3,j,sss2,i);
 
-    //for(int i=0;i<sss1.numSample;i++){
-    //    float min=1;
-    //    for(int j=0;j<sss2.numSample;j++) {
-    //        float sum0=getDistance2(sss1,i,sss2,j);
-    //        //cout<<i<<' '<<j<<' '<<sum0<<endl;
-    //        float v=exp(-4*sumArray1[i]/sum0)-exp(-4*sumArray2[j]/sum0);
-    //        //cout<<i<<' '<<j<<' '<<v<<endl;
-    //        if (v<min) min=v;
-    //    }
-
-    //    //cout<<i<<' '<<min<<endl;
-
-    //    if(min>THRESHOLD) resultArray[i]=1;
-    //    else if(min<-THRESHOLD) resultArray[i]=-1;
-    //    else resultArray[i]=0;
-    //}
-
+    
     for(int i=0;i<sss1.numSample;i++) 
         for(int j=0;j<sss2.numSample;j++)
             sumArray0[i*sss2.numSample+j]=getDistance2(sss2,j,sss1,i);
@@ -354,5 +363,36 @@ int *m3gzcCPU(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSample
     }
 
     delete test_sample.data_vector;
+    return resultArray;
+}
+
+int *m3gzcCPUOriginal(SerializedSampleSet sss1,SerializedSampleSet sss2,SerializedSampleSet sss3){
+    clock_t timer;
+    clock_t timer0;
+    float time;
+    TIMER_BEGIN(timer);
+    TIMER_BEGIN(timer0);
+
+    int * resultArray=new int[sss3.numSample*sss1.numSample];
+        
+    for(int i=0;i<sss3.numSample;i++){
+        for(int j=0;j<sss1.numSample;j++){
+            float min=1;
+            for(int k=0;k<sss2.numSample;k++){
+                float sum0=getDistance2(sss1,j,sss2,k);
+                float sum1=getDistance2(sss1,j,sss3,i);
+                float sum2=getDistance2(sss2,k,sss3,i);
+                //float sum0=sumArray0[j*sss2.numSample+k];
+                float v=exp(-4*sum1/sum0)-exp(-4*sum2/sum0);
+                if(v<min) min=v;
+                //if(v<-THRESHOLD) break;
+            }
+
+            if(min>THRESHOLD) resultArray[i*sss1.numSample+j]=1;
+            else if(min<-THRESHOLD) resultArray[i*sss1.numSample+j]=-1;
+            else resultArray[i*sss1.numSample+j]=0;
+        }
+    }
+    TIMER_PRINT("Execution time",timer);
     return resultArray;
 }

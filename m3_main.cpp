@@ -4,6 +4,9 @@
 #include<ctime>
 #include<iostream>
 
+
+ofstream fbreakdown;
+
 using namespace std;
 //using namespace M3;
 int main(int argc,char ** argv){
@@ -27,11 +30,13 @@ int main(int argc,char ** argv){
     fileName=fileName.substr(0,pos);
     sprintf(outDirNameArray,"%s_%d_%d_%d_%d",fileName.c_str(),SHARD_SIZE,TEST_SHARD_SIZE,BLOCK_SIZE,M3::getVersion());
     string outDirNameString(outDirNameArray);
+    outDirNameString="data/"+outDirNameString;
     system(string("mkdir "+outDirNameString).c_str());
     outDirNameString+="/";
     ofstream fout;
     fout.open(string(outDirNameString+"out.txt").c_str());
     ofstream ftimeout(string(outDirNameString+"time.txt").c_str());
+    fbreakdown.open(string(outDirNameString+"breakdown.txt").c_str());
     int numSampleArray[3];
     for(int i=0;i<3;i++) numSampleArray[i]=0;
     clock_t start;
@@ -118,6 +123,7 @@ int main(int argc,char ** argv){
     //}
     fout.close();
     ftimeout.close();
+    fbreakdown.close();
     M3::finalize();
 
     return 0;
